@@ -1,4 +1,13 @@
+"""
+Authors: Kwanho Kim, Saideep Gona, Jinke Liu
+
+Contains code for training convolutional neural networks for predicting 
+dendritic spine presence from pre-constructed training patches.
+"""
 import sys
+import argparse
+import os
+import copy
 import numpy as np
 import torch
 import torch.nn as nn
@@ -7,6 +16,9 @@ import torch.optim  as optim
 import random
 import torchvision
 import torchvision.transforms as transforms
+import datetime
+from pathlib import Path
+import matplotlib.pyplot as plt
 
 class Net(nn.Module):
     """
@@ -15,26 +27,43 @@ class Net(nn.Module):
     out_size = number of labels
     """
 
-    def __init__(self, c1_out, c2_out, l1_out, l2_out, out_size, kernel_size):
+    def __init__(self, c1_out, c2_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size, pad):
         super(Net, self).__init__()
-        # 1 input image channel, 6 output channels, 5x5 square convolution
-        # kernel
-        self.conv1 = nn.Conv2d(1, c1_out, kernel_size)
-        self.conv2 = nn.Conv2d(c1_out, c2_out, kernel_size)
-        # an affine operation: y = Wx + b
-        self.fc1 = nn.Linear(c2_out * kernel_size * kernel_size, l1_out)
+        # 1 input image channel
+
+        self.conv1 = nn.Conv2d(1, c1_out, kernel_size, padding=pad)
+        self.conv2 = nn.Conv2d(c1_out, c2_out, kernel_size, padding=pad)
+
+        self.pool_size = pool_size
+        self.convout_size = int(c2_out * (patch_size/pool_size**2)**2)
+        # self.convout_size = 3600
+ 
+        print(self.convout_size, " size of convolution output")
+
+        self.fc1 = nn.Linear(self.convout_size , l1_out)
         self.fc2 = nn.Linear(l1_out, l2_out)
         self.fc3 = nn.Linear(l2_out, out_size)
 
-    def forward(self, x, pool_size):
-        # Max pooling over a (2, 2) window
-        x = F.max_pool2d(F.relu(self.conv1(x)), pool_size)
-        x = F.max_pool2d(F.relu(self.conv2(x)), pool_size)
-        x = x.view(-1, self.num_flat_features(x))
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
+    def forward(self, x):
+        # print(type(x))
+        # Convolutions + Pooling
+        c1 = F.relu(self.conv1(x))
+        # print(c1.shape, " c1")
+        p1 = F.max_pool2d(c1, self.pool_size)
+        # print(p1.shape, " p1")
+        c2 = F.relu(self.conv2(p1))
+        # print(c2.shape, " c2")
+        p2 = F.max_pool2d(c2, self.pool_size)
+        # print(p2.shape, " p2")
+
+        # Fully Connected
+        flat = p2.view(-1, self.convout_size)
+        # print(flat.shape, " flat")
+        f1 = F.relu(self.fc1(flat))
+        # print(f1.shape, " f1")l3
+        f2 = F.relu(self.fc2(f1))
+        f3 = self.fc3(f2)
+        return f3
 
     def num_flat_features(self, x):
         size = x.size()[1:]  # all dimensions except the batch dimension
@@ -43,8 +72,8 @@ class Net(nn.Module):
             num_features *= s
         return num_features
 
-    def save_model_weights(self, suffix):
-        torch.save(self.state_dict(), ''.join([suffix, '.pt']))
+    def save_model_weights(self, filepath):
+        torch.save(self.state_dict(), filepath)
 
     def load_model_weights(self, model_name):
         self.load_state_dict(torch.load(model_name))
@@ -58,85 +87,217 @@ def one_hot_y(y, size):
         vec_y.append(yy)
     return np.array(vec_y)
 
-
 def import_data(saved_arr):
-    arr = np.load(saved_arr)
-    x = arr[:, :-1]
-    y = arr[:, -1]
-    y = one_hot_y(y, 2)
+    x = np.load(saved_arr + "_x.npy")
+    y = np.load(saved_arr + "_y.npy")
+    # x = arr[:,:, :-1]
+    # y = arr[:,:, -1]
+    # y = one_hot_y(y, 2)
     return x, y
 
 def sample_batch(x, y, batch_size):
 
-    inds = random.sample(range(len(x)),batch_size)
-    batch_x = [x[i] for i in inds]
-    batch_y = [y[i] for i in inds]
+    all_inds = np.arange(len(x))
 
-    return torch.FloatTensor(batch_x), torch.FloatTensor(batch_y)
+    sample_inds = np.random.choice(all_inds, batch_size)
 
-class SimpleCustomBatch:
-    def __init__(self, data):
-        transposed_data = list(zip(*data))
-        self.inp = torch.stack(transposed_data[0], 0)
-        self.tgt = torch.stack(transposed_data[1], 0)
+    return x[sample_inds], y[sample_inds]
 
-    def pin_memory(self):
-        self.inp = self.inp.pin_memory()
-        self.tgt = self.tgt.pin_memory()
-        return self
+def epoch_loss_error(model, set_x, set_y):
 
-def collate_wrapper(batch):
-    return SimpleCustomBatch(batch)
+    # print("epoch losses")
+    forward_out = model.forward(set_x)
+    # print(forward_out)
+    
+    maxes, preds = torch.max(forward_out,1)
+    overlap = torch.eq(preds, set_y)
+    accuracy = float(torch.sum(overlap))/len(overlap)
+
+    loss_out = model.objective(forward_out, set_y)
+    # print(loss_out)
+    return float(loss_out), (1-accuracy)
+
+def rand_split_data(x, y, p):
+    """ 
+    Randomly split data into train,val,test maintaining x-y mapping
+
+    :param x: X dataset (examples)
+    :param y: y dataset (labels)
+    :param p: tuple of (train fraction, val fraction). Test fraction is remainder
+    :return: all partitioned datasets (train, val, test) for (x,y)
+    """
+    shuffle_inds = np.random.shuffle(np.arange(len(x)))
+    shuff_x = x[shuffle_inds]
+    shuff_y = y[shuffle_inds]
+
+    # Split shuffled data
+    xl = len(x)
+    data_splits = [int(p[0]*xl), int(p[1]*xl), xl - int(p[0]*xl) - int(p[1]*xl)]
+    x_training, x_val, x_test = torch.split(x, data_splits)
+    y_training, y_val, y_test = torch.split(y, data_splits)
+
+    return x_training, x_val, x_test, y_training, y_val, y_test
+
+def record_training(data, metadata, net):
+    """ 
+    Save plots and associated metadata for a given training session
+
+    :param data: Dictionary containing loss and error trajectories for train/val
+    :param metadata: Dictionary containing various metadata values for the current run
+    :param net: Trained network object 
+    """
+    timestamp = "".join(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S").split(" "))
+    timestamp = timestamp.replace(":", "_")
+    cwd = os.getcwd()
+
+    # Create timestamped directory
+    if not os.path.exists(Path(cwd + "/training_sessions/")):
+        os.makedirs(Path(cwd + "/training_sessions/"))
+    
+    save_dir = Path(cwd  + "/training_sessions/" + timestamp + "/")
+    os.makedirs(save_dir)
+
+    # Output metadata
+    metadata_text = [
+        "Patch Size: " + str(metadata["Patch Size"]),
+        "Batch Size: " + str(metadata["Batch Size"]),
+        "Learning Rate: " + str(metadata["Learning Rate"]),
+        "Kernel Size: " + str(metadata["Kernel Size"]),
+        "Epochs: " + str(metadata["Epochs"]),
+        "Test Loss: " + str(metadata["Test Loss"]),
+        "Test Error: " + str(metadata["Test Error"]),
+        "\n"
+    ]
+
+    meta_file = Path(cwd  + "/training_sessions/" + timestamp + "/metadata.txt")
+    with open(meta_file, "w") as m:
+        m.write("\n".join(metadata_text))
+        print(net, file=m)
+
+    # Save model weights
+    weights_file = Path(cwd  + "/training_sessions/" + timestamp + "/weights.pt")
+    net.save_model_weights(weights_file)
+
+    # Plot training data
+
+    plt.plot(data["training_losses"], label="train loss")
+    plt.plot(data["validation_losses"], label="val loss")
+    plt.xlabel("epoch")
+    plt.ylabel("loss")
+    plt.title("Training Loss")
+    plt.legend()
+    fig_file = Path()
+    loss_file  = Path(cwd  + "/training_sessions/" + timestamp + "/train_loss.png")
+    plt.savefig(loss_file)
+    plt.clf()
+    
+    plt.plot(data["training_errors"], label="train error")
+    plt.plot(data["validation_errors"], label="val error")
+    plt.xlabel("epoch")
+    plt.ylabel("error")
+    plt.title("Training Error")
+    plt.legend()
+    fig_file = Path()
+    error_file  = Path(cwd  + "/training_sessions/" + timestamp + "/train_error.png")
+    plt.savefig(error_file)
+    plt.clf()
+
 
 if __name__ == "__main__":
-    arr_pos = sys.argv[1]
-    arr_neg = sys.argv[2]
 
-    x_pos, y_pos = import_data(arr_pos)
-    x_neg, y_neg = import_data(arr_neg)
+    parser = argparse.ArgumentParser(description="Convolutional Neural Network(CNN) Model for 10-707(Deep Learning) project")
+    parser.add_argument("arr_pos_root", help="File path to the positive data arrays. Excludes _(x/y).npy extension")
+    parser.add_argument("arr_neg_root", help="File path to the negative data arrays. Excludes _(x/y).npy extension")
 
-    x = np.concatenate((x_pos, x_neg))
-    y = np.concatenate((y_pos, y_neg))
+    arr_pos_root = sys.argv[1]
+    arr_neg_root = sys.argv[2]
 
-    dataset = torch.utils.data.Dataset(x, y)
-    loader = torch.utils.data.DataLoader(dataset, batch_size)
+    x_pos, y_pos = import_data(arr_pos_root)
+    x_neg, y_neg = import_data(arr_neg_root)
 
-    data_splits = [np.floor(0.7*len(x)), np.floor(0.22*len(x)), len(x) - np.floor(0.7*len(x)) - np.floor(0.2*len(x))]
+    x = torch.as_tensor(np.concatenate((x_pos, x_neg)), dtype=torch.float)
+    y = torch.as_tensor(np.concatenate((y_pos, y_neg)), dtype=torch.long)
+    y = y.view((len(y)))
 
-    x_training, x_val, x_test = torch.utils.data.random_split(x, data_splits)
-    y_training, y_val, y_test = torch.utils.data.random_split(y, data_splits)
+    # y.cuda()
+    # x.cuda()
 
-# Network Params: c1_out, c2_out, l1_out, l2_out, out_size, kernel_size
+    print("Shape of X: ", x.shape)
+    print("Shape of y: ", y.shape)
 
-    net = Net(6, 6, 200, 100, 2)
+    metadata_dict = {
+        "Patch Size": x.shape[2],
+        "Batch Size" : 42,
+        "Pooling": 2,
+        "Learning Rate" : 0.0001,
+        "Kernel Size" : 3,
+        "Padding" : 1,
+        "Epochs" : 50,
+        "Test Loss" : 0,
+        "Test Error" : 0
+    }
 
-    batch_size = 32
-    epochs = 100
+    # CAN START CROSS-VALIDATION LOOP HERE
+
+    # Shuffle data before partitioning
+    partition = (0.6, 0.3)
+    x_training, x_val, x_test, y_training, y_val, y_test = rand_split_data(x, y, partition)
+
+    # Network Params: c1_out, c2_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size
+
+    net = Net(6, 36, 200, 100, 2, metadata_dict["Kernel Size"], metadata_dict["Patch Size"], metadata_dict["Pooling"], metadata_dict["Padding"])
+    net.batch_size = metadata_dict["Batch Size"]
+    net.epochs = metadata_dict["Epochs"]
+    net.float()
+    # net.cuda()
+    print(net)
     net.objective = nn.CrossEntropyLoss()
-    optimizer = optim.adam(net.parameters(), lr = 0.0001)
+    optimizer = optim.Adam(net.parameters(), lr = metadata_dict["Learning Rate"])
 
-    training_dataset = torch.utils.data.Dataset(x_training, y_training)
-    loader = torch.utils.data.DataLoader(training_dataset, batch_size, collate_fn=collate_wrapper, pin_memory=True)
+    # Initial training metrics
+    train_loss, train_error = epoch_loss_error(net, x_training, y_training)
+    print("\tTraining Loss: ", train_loss)
+    print("\tTraining Error: ", train_error)
+    val_loss, val_error = epoch_loss_error(net, x_val, y_val)
+    print("\tValidation Loss: ", val_loss)
+    print("\tValidation Error: ", val_error)    
+    loss_error = {
+        "training_losses" : [train_loss],
+        "validation_losses" : [val_loss],
+        "training_errors" : [train_error],
+        "validation_errors" : [val_error]
+    }
 
-    for batch_ndx, sample in enumerate(loader):
-        print(sample.inp.is_pinned())
-        print(sample.tgt.is_pinned())
+    # Start Training
+    for x in range(net.epochs):
+        print("Epoch: ", x, " start")
+        for y in range(int(len(x_training)/net.batch_size)):
+    
+            batch_x, batch_y = sample_batch(x_training, y_training, net.batch_size)
+            optimizer.zero_grad()
+            output = net(batch_x)
+            loss = net.objective(output, batch_y)
+            loss.backward()
+            optimizer.step()
 
+        train_loss, train_error = epoch_loss_error(net, x_training, y_training)
+        print("\tTraining Loss: ", train_loss)
+        print("\tTraining Error: ", train_error)
+        val_loss, val_error = epoch_loss_error(net, x_val, y_val)
+        print("\tValidation Loss: ", val_loss)
+        print("\tValidation Error: ", val_error)    
+    
+        loss_error["training_losses"].append(train_loss)
+        loss_error["training_errors"].append(train_error)
+        loss_error["validation_losses"].append(val_loss)
+        loss_error["validation_errors"].append(val_error)
+        
+    test_loss, test_error = epoch_loss_error(net, x_test, y_test)
+    metadata_dict["Test Loss"] = test_loss
+    metadata_dict["Test Error"] = test_error
 
-    #
-    # for x in range(epochs):
-    #     print("Epoch: ", x)
-    #     for y in range(np.floor(len(x_training)/batch_size)):
-    #
-    #         batch_x, batch_y = sample_batch(x_training, y_training, batch_size)
-    #
-    #         optimizer.zero_grad()
-    #         output = net(batch_x, 2)
-    #         loss = net.objective(output, batch_y)
-    #         loss.backward()
-    #         optimizer.step()
-    #
-    # for x in
+    record_training(loss_error, metadata_dict, net)
+
 
 
 

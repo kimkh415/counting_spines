@@ -1,0 +1,16 @@
+Patch Size: 40
+Batch Size: 42
+Learning Rate: 0.0001
+Kernel Size: 3
+Epochs: 50
+Test Loss: 0.679146945476532
+Test Error: 0.11319394376351843
+
+Net(
+  (conv1): Conv2d(1, 6, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  (conv2): Conv2d(6, 36, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  (fc1): Linear(in_features=3600, out_features=200, bias=True)
+  (fc2): Linear(in_features=200, out_features=100, bias=True)
+  (fc3): Linear(in_features=100, out_features=2, bias=True)
+  (objective): CrossEntropyLoss()
+)

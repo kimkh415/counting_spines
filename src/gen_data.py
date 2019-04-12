@@ -1,8 +1,17 @@
+"""
+Authors: Kwanho Kim, Saideep Gona, Jinke Liu
+
+Contains code for generating training patches from original dendritic
+spine microscopy images.
+"""
+
 from PIL import Image
 import numpy as np
 import sys
 import os
 import re
+
+from sklearn.preprocessing import scale
 
 
 def get_file_paths(pwd):
@@ -34,7 +43,7 @@ def extract_centers(fnames):
     return spine_coords
 
 
-def create_training_images(tifs, coords, outname):
+def create_training_images(tifs, coords, outname, patch_dim, norm_factor):
 
     pos_examples = []
     neg_exampels = []
@@ -43,21 +52,22 @@ def create_training_images(tifs, coords, outname):
     neg_idx = 1
 
     for i, tif in enumerate(tifs):
+        print("Processing Image: ", i)
         im = Image.open(tif)
         ori_arr = np.array(im)
-        arr = np.pad(ori_arr, (40, 40), 'constant', constant_values=0)
+        arr = np.pad(ori_arr, (patch_dim, patch_dim), 'constant', constant_values=0)
 
         avoid = []
 
         for coord in coords[i]:
             (x, y) = coord
-            new_x = int(y) + 40
-            new_y = int(x) + 40
+            new_x = int(y) + patch_dim
+            new_y = int(x) + patch_dim
 
             avoid.append((new_x, new_y))
 
-            box = arr[new_x - 20: new_x + 20, new_y - 20: new_y + 20]
-            pos_examples.append(box + [1])
+            box = arr[new_x - int(patch_dim/2): new_x + int(patch_dim/2), new_y - int(patch_dim/2): new_y + int(patch_dim/2)]
+            pos_examples.append(box.reshape((1, patch_dim, patch_dim))/norm_factor)
 
             tr_im = Image.fromarray(box)
             tr_im.save(outname + "positive_examples/" + "spine_image{}.tif".format(pos_idx))
@@ -68,27 +78,31 @@ def create_training_images(tifs, coords, outname):
             overlap = True
 
             while overlap:
-                x = np.random.randint(ori_arr.shape[0]) + 40
-                y = np.random.randint(ori_arr.shape[1]) + 40
+                x = np.random.randint(ori_arr.shape[0]) + patch_dim
+                y = np.random.randint(ori_arr.shape[1]) + patch_dim
 
-                overlap = check_overlap((x, y), avoid)
+                overlap = check_overlap((x, y), avoid, patch_dim)
 
-            box = arr[x - 20: x + 20, y - 20: y + 20]
-            neg_exampels.append(box + [0])
+            box = arr[x - int(patch_dim/2): x + int(patch_dim/2), y - int(patch_dim/2): y + int(patch_dim/2)]
+            neg_exampels.append(box.reshape((1, patch_dim, patch_dim))/norm_factor)
 
             tr_im = Image.fromarray(box)
             tr_im.save(outname + "negative_examples/" + "spine_image{}.tif".format(neg_idx))
             neg_idx += 1
 
-    np.save(outname + "np_arr_pos.npy", np.array(pos_examples))
-    np.save(outname + "np_arr_neg.npy", np.array(neg_exampels))
+    print(np.array(pos_examples).shape, "pos examples")
+
+    np.save(outname + "np_arr_pos_x.npy", np.array(pos_examples))
+    np.save(outname + "np_arr_pos_y.npy", np.ones((len(pos_examples),1)))
+    np.save(outname + "np_arr_neg_x.npy", np.array(neg_exampels))
+    np.save(outname + "np_arr_neg_y.npy", np.zeros((len(pos_examples),1)))
 
 
-def check_overlap(point, box):
+def check_overlap(point, box, patch_dim):
     (x, y) = point
 
     for coord in box:
-        if coord[0]-20 < x < coord[0] + 20 and coord[1] - 20 < y < coord[1] + 20:
+        if coord[0]-int(patch_dim/2) < x < coord[0] + int(patch_dim/2) and coord[1] - int(patch_dim/2) < y < coord[1] + int(patch_dim/2):
             return True
 
     return False
@@ -101,5 +115,8 @@ if __name__ == "__main__":
 
     coords = extract_centers(infos)
 
-    create_training_images(tifs, coords, "training_images/")
+    patch_dim = 40
+    norm_factor = 100
+
+    create_training_images(tifs, coords, "training_images/", patch_dim, norm_factor)
 
