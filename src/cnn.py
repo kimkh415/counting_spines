@@ -17,6 +17,7 @@ import random
 import torchvision
 import torchvision.transforms as transforms
 import datetime
+from PIL import Image
 from pathlib import Path
 import matplotlib.pyplot as plt
 
@@ -103,19 +104,28 @@ def sample_batch(x, y, batch_size):
 
     return x[sample_inds], y[sample_inds]
 
+
+def pc(decimal):
+
+    percent = decimal * 100
+    str_pc = str(percent)
+
+    return str_pc[0:5] + "%"
+
 def epoch_loss_error(model, set_x, set_y):
 
     # print("epoch losses")
     forward_out = model.forward(set_x)
     # print(forward_out)
     
-    maxes, preds = torch.max(forward_out,1)
+    _, preds = torch.max(forward_out,1)
     overlap = torch.eq(preds, set_y)
+    # print(overlap)
     accuracy = float(torch.sum(overlap))/len(overlap)
 
     loss_out = model.objective(forward_out, set_y)
     # print(loss_out)
-    return float(loss_out), (1-accuracy)
+    return float(loss_out), (1-accuracy), ~overlap
 
 def rand_split_data(x, y, p):
     """ 
@@ -138,12 +148,13 @@ def rand_split_data(x, y, p):
 
     return x_training, x_val, x_test, y_training, y_val, y_test
 
-def record_training(data, metadata, net):
+def record_training(data, metadata, net, wrong_tests, correct_labels):
     """ 
     Save plots and associated metadata for a given training session
 
     :param data: Dictionary containing loss and error trajectories for train/val
     :param metadata: Dictionary containing various metadata values for the current run
+    :param wrong_tests: Tensor containing incorrectly labeled patches 
     :param net: Trained network object 
     """
     timestamp = "".join(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S").split(" "))
@@ -177,6 +188,20 @@ def record_training(data, metadata, net):
     # Save model weights
     weights_file = Path(cwd  + "/training_sessions/" + timestamp + "/weights.pt")
     net.save_model_weights(weights_file)
+
+    # Save images of incorrectly labeled test sets
+    # print(wrong_tests.shape, " wrong tests")
+    wrong_tests_np = wrong_tests.numpy()
+
+    wrong_dir = Path(cwd  + "/training_sessions/" + timestamp + "/incorrect_labelings/")
+    os.makedirs(wrong_dir)
+
+    for x in range(len(wrong_tests)):
+        sub_image = wrong_tests_np[x]. reshape((metadata["Patch Size"], metadata["Patch Size"]))
+        # print(sub_image.shape, type(sub_image), " sub image")
+        wrong_image = Image.fromarray(sub_image)
+        wrong_image.save(Path(cwd  + "/training_sessions/" + timestamp + 
+                "/incorrect_labelings/" + str(x) + "_" + str(int(correct_labels[x])) + ".tif"))
 
     # Plot training data
 
@@ -232,7 +257,7 @@ if __name__ == "__main__":
         "Learning Rate" : 0.0001,
         "Kernel Size" : 3,
         "Padding" : 1,
-        "Epochs" : 50,
+        "Epochs" : 5,
         "Test Loss" : 0,
         "Test Error" : 0
     }
@@ -243,9 +268,17 @@ if __name__ == "__main__":
     partition = (0.6, 0.3)
     x_training, x_val, x_test, y_training, y_val, y_test = rand_split_data(x, y, partition)
 
+    print("Dataset Partitions:", str(len(x_training)) + " , " + str(len(x_val)) + " , " + str(len(x_test)) + " ")
+
     # Network Params: c1_out, c2_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size
 
-    net = Net(6, 36, 200, 100, 2, metadata_dict["Kernel Size"], metadata_dict["Patch Size"], metadata_dict["Pooling"], metadata_dict["Padding"])
+    c1_filters = 20
+    c2_filters = 60
+
+    f1_nodes = 500
+    f2_nodes = 200
+
+    net = Net(c1_filters, c2_filters, f1_nodes, f2_nodes, 2, metadata_dict["Kernel Size"], metadata_dict["Patch Size"], metadata_dict["Pooling"], metadata_dict["Padding"])
     net.batch_size = metadata_dict["Batch Size"]
     net.epochs = metadata_dict["Epochs"]
     net.float()
@@ -255,12 +288,12 @@ if __name__ == "__main__":
     optimizer = optim.Adam(net.parameters(), lr = metadata_dict["Learning Rate"])
 
     # Initial training metrics
-    train_loss, train_error = epoch_loss_error(net, x_training, y_training)
+    train_loss, train_error, _ = epoch_loss_error(net, x_training, y_training)
     print("\tTraining Loss: ", train_loss)
-    print("\tTraining Error: ", train_error)
-    val_loss, val_error = epoch_loss_error(net, x_val, y_val)
+    print("\tTraining Error: ", pc(train_error))
+    val_loss, val_error, _ = epoch_loss_error(net, x_val, y_val)
     print("\tValidation Loss: ", val_loss)
-    print("\tValidation Error: ", val_error)    
+    print("\tValidation Error: ", pc(val_error))     
     loss_error = {
         "training_losses" : [train_loss],
         "validation_losses" : [val_loss],
@@ -280,23 +313,27 @@ if __name__ == "__main__":
             loss.backward()
             optimizer.step()
 
-        train_loss, train_error = epoch_loss_error(net, x_training, y_training)
+        train_loss, train_error, _ = epoch_loss_error(net, x_training, y_training)
         print("\tTraining Loss: ", train_loss)
-        print("\tTraining Error: ", train_error)
-        val_loss, val_error = epoch_loss_error(net, x_val, y_val)
+        print("\tTraining Error: ", pc(train_error))
+        val_loss, val_error, _ = epoch_loss_error(net, x_val, y_val)
         print("\tValidation Loss: ", val_loss)
-        print("\tValidation Error: ", val_error)    
+        print("\tValidation Error: ", pc(val_error))    
     
         loss_error["training_losses"].append(train_loss)
         loss_error["training_errors"].append(train_error)
         loss_error["validation_losses"].append(val_loss)
         loss_error["validation_errors"].append(val_error)
         
-    test_loss, test_error = epoch_loss_error(net, x_test, y_test)
+    test_loss, test_error, wrong_labels = epoch_loss_error(net, x_test, y_test)
+
+    print("Training Complete, Reporting Test Results")
+    print("\tTest Loss: ", test_loss)
+    print("\tTest Error: ", pc(test_error))
     metadata_dict["Test Loss"] = test_loss
     metadata_dict["Test Error"] = test_error
 
-    record_training(loss_error, metadata_dict, net)
+    record_training(loss_error, metadata_dict, net, x_test[wrong_labels], y_test[wrong_labels])
 
 
 
