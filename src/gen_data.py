@@ -6,10 +6,12 @@ spine microscopy images.
 """
 
 from PIL import Image
+import argparse
 import numpy as np
 import sys
 import os
 import re
+from pathlib import Path
 
 from sklearn.preprocessing import scale
 
@@ -51,6 +53,9 @@ def create_training_images(tifs, coords, outname, patch_dim, norm_factor):
     pos_idx = 1
     neg_idx = 1
 
+    if not os.path.exists(Path(outname)):
+        os.makedirs(Path(outname))
+
     for i, tif in enumerate(tifs):
         print("Processing Image: ", i)
         im = Image.open(tif)
@@ -70,6 +75,8 @@ def create_training_images(tifs, coords, outname, patch_dim, norm_factor):
             pos_examples.append(box.reshape((1, patch_dim, patch_dim))/norm_factor)
 
             tr_im = Image.fromarray(box)
+            if not os.path.exists(Path(outname + "positive_examples/")):
+                os.makedirs(Path(outname + "positive_examples/"))
             tr_im.save(outname + "positive_examples/" + "spine_image{}.tif".format(pos_idx))
             pos_idx += 1
 
@@ -87,6 +94,8 @@ def create_training_images(tifs, coords, outname, patch_dim, norm_factor):
             neg_exampels.append(box.reshape((1, patch_dim, patch_dim))/norm_factor)
 
             tr_im = Image.fromarray(box)
+            if not os.path.exists(Path(outname + "negative_examples/")):
+                os.makedirs(Path(outname + "negative_examples/"))
             tr_im.save(outname + "negative_examples/" + "spine_image{}.tif".format(neg_idx))
             neg_idx += 1
 
@@ -109,9 +118,16 @@ def check_overlap(point, box, patch_dim):
 
 
 if __name__ == "__main__":
-    im_dir = sys.argv[1]
 
-    tifs, infos = get_file_paths(im_dir)
+
+    parser = argparse.ArgumentParser(description="Data Preprocessing and patch \
+    generation code")
+    parser.add_argument("im_dir", help="Directory including the raw images to be \
+    processed")
+    args = parser.parse_args()
+
+
+    tifs, infos = get_file_paths(args.im_dir)
 
     coords = extract_centers(infos)
 

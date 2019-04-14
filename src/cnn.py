@@ -21,22 +21,23 @@ from PIL import Image
 from pathlib import Path
 import matplotlib.pyplot as plt
 
-class Net(nn.Module):
+class ConvNet(nn.Module):
     """
     c1_out = convolutional layer 1 filter count
     c2_out = convolutional layer 2 filter count
     out_size = number of labels
     """
 
-    def __init__(self, c1_out, c2_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size, pad):
-        super(Net, self).__init__()
+    def __init__(self, c1_out, c2_out, c3_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size, pad):
+        super(ConvNet, self).__init__()
         # 1 input image channel
-
+        print(patch_size)
         self.conv1 = nn.Conv2d(1, c1_out, kernel_size, padding=pad)
         self.conv2 = nn.Conv2d(c1_out, c2_out, kernel_size, padding=pad)
+        self.conv3 = nn.Conv2d(c2_out, c3_out, kernel_size, padding=pad)
 
         self.pool_size = pool_size
-        self.convout_size = int(c2_out * (patch_size/pool_size**2)**2)
+        self.convout_size = int(c3_out * (patch_size/pool_size**3)**2)
         # self.convout_size = 3600
  
         print(self.convout_size, " size of convolution output")
@@ -48,6 +49,7 @@ class Net(nn.Module):
     def forward(self, x):
         # print(type(x))
         # Convolutions + Pooling
+        # print(x.shape, " x")
         c1 = F.relu(self.conv1(x))
         # print(c1.shape, " c1")
         p1 = F.max_pool2d(c1, self.pool_size)
@@ -56,14 +58,20 @@ class Net(nn.Module):
         # print(c2.shape, " c2")
         p2 = F.max_pool2d(c2, self.pool_size)
         # print(p2.shape, " p2")
+        c3 = F.relu(self.conv3(p2))
+        # print(c3.shape, " c3")
+        p3 = F.max_pool2d(c3, self.pool_size)
+        # print(p3.shape, " p3")
+
 
         # Fully Connected
-        flat = p2.view(-1, self.convout_size)
+        flat = p3.view(-1, self.convout_size)
         # print(flat.shape, " flat")
         f1 = F.relu(self.fc1(flat))
         # print(f1.shape, " f1")l3
         f2 = F.relu(self.fc2(f1))
         f3 = self.fc3(f2)
+
         return f3
 
     def num_flat_features(self, x):
@@ -233,9 +241,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convolutional Neural Network(CNN) Model for 10-707(Deep Learning) project")
     parser.add_argument("arr_pos_root", help="File path to the positive data arrays. Excludes _(x/y).npy extension")
     parser.add_argument("arr_neg_root", help="File path to the negative data arrays. Excludes _(x/y).npy extension")
+    args = parser.parse_args()
 
-    arr_pos_root = sys.argv[1]
-    arr_neg_root = sys.argv[2]
+    arr_pos_root = args.arr_pos_root
+    arr_neg_root = args.arr_neg_root
 
     x_pos, y_pos = import_data(arr_pos_root)
     x_neg, y_neg = import_data(arr_neg_root)
@@ -257,7 +266,7 @@ if __name__ == "__main__":
         "Learning Rate" : 0.0001,
         "Kernel Size" : 3,
         "Padding" : 1,
-        "Epochs" : 5,
+        "Epochs" : 30,
         "Test Loss" : 0,
         "Test Error" : 0
     }
@@ -272,13 +281,13 @@ if __name__ == "__main__":
 
     # Network Params: c1_out, c2_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size
 
-    c1_filters = 20
-    c2_filters = 60
+    c1_filters = 8
+    c2_filters = 64
+    c3_filters = 512
+    f1_nodes = 300
+    f2_nodes = 100
 
-    f1_nodes = 500
-    f2_nodes = 200
-
-    net = Net(c1_filters, c2_filters, f1_nodes, f2_nodes, 2, metadata_dict["Kernel Size"], metadata_dict["Patch Size"], metadata_dict["Pooling"], metadata_dict["Padding"])
+    net = ConvNet(c1_filters, c2_filters, c3_filters, f1_nodes, f2_nodes, 2, metadata_dict["Kernel Size"], metadata_dict["Patch Size"], metadata_dict["Pooling"], metadata_dict["Padding"])
     net.batch_size = metadata_dict["Batch Size"]
     net.epochs = metadata_dict["Epochs"]
     net.float()
