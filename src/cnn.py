@@ -16,6 +16,7 @@ import datetime
 from PIL import Image
 from pathlib import Path
 import matplotlib.pyplot as plt
+import pickle
 
 
 class ConvNet(nn.Module):
@@ -25,17 +26,19 @@ class ConvNet(nn.Module):
     out_size = number of labels
     """
 
-    def __init__(self, c1_out, c2_out, c3_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size, pad):
+    def __init__(self, c1_out, c2_out, c3_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size, pad, dropout_prob):
         super(ConvNet, self).__init__()
         # 1 input image channel
         print(patch_size)
+        self.dp = dropout_prob
+
         self.conv1 = nn.Conv2d(1, c1_out, kernel_size, padding=pad)
         self.conv2 = nn.Conv2d(c1_out, c2_out, kernel_size, padding=pad)
         self.bn1 = nn.BatchNorm2d(c2_out)
-        self.do1 = nn.Dropout2d()
+        self.do1 = nn.Dropout2d(self.dp)
         self.conv3 = nn.Conv2d(c2_out, c3_out, kernel_size, padding=pad)
         self.bn2 = nn.BatchNorm2d(c3_out)
-        self.do2 = nn.Dropout2d()
+        self.do2 = nn.Dropout2d(self.dp)
 
         self.pool_size = pool_size
         self.convout_size = int(c3_out * (patch_size/pool_size**3)**2)
@@ -45,10 +48,10 @@ class ConvNet(nn.Module):
 
         self.fc1 = nn.Linear(self.convout_size, l1_out)
         self.bn3 = nn.BatchNorm1d(l1_out)
-        self.do3 = nn.Dropout()
+        self.do3 = nn.Dropout(self.dp)
         self.fc2 = nn.Linear(l1_out, l2_out)
         self.bn4 = nn.BatchNorm1d(l2_out)
-        self.do4 = nn.Dropout()
+        self.do4 = nn.Dropout(self.dp)
         self.fc3 = nn.Linear(l2_out, out_size)
 
     def forward(self, x):
@@ -112,11 +115,11 @@ def one_hot_y(y, size):
 
 
 def import_data(dirname):
-    x_pos = np.load(os.path.join(dirname, "np_arr_pos_x.npy"))
-    y_pos = np.load(os.path.join(dirname, "np_arr_pos_y.npy"))
+    x_pos = np.load(Path(dirname + "/np_arr_pos_x.npy"))
+    y_pos = np.load(Path(dirname + "/np_arr_pos_y.npy"))
 
-    x_neg = np.load(os.path.join(dirname, "np_arr_neg_x.npy"))
-    y_neg = np.load(os.path.join(dirname, "np_arr_neg_y.npy"))
+    x_neg = np.load(Path(dirname + "/np_arr_neg_x.npy"))
+    y_neg = np.load(Path(dirname + "/np_arr_neg_y.npy"))
     # x = arr[:,:, :-1]
     # y = arr[:,:, -1]
     # y = one_hot_y(y, 2)
@@ -202,6 +205,7 @@ def record_training(data, metadata, net, wrong_tests, correct_labels):
     metadata_text = [
         "Patch Size: " + str(metadata["Patch Size"]),
         "Batch Size: " + str(metadata["Batch Size"]),
+        "Dropout: " + str(metadata["Dropout"]),
         "Learning Rate: " + str(metadata["Learning Rate"]),
         "Kernel Size: " + str(metadata["Kernel Size"]),
         "Epochs: " + str(metadata["Epochs"]),
@@ -216,8 +220,8 @@ def record_training(data, metadata, net, wrong_tests, correct_labels):
         print(net, file=m)
 
     # Save model weights
-    weights_file = Path(cwd  + "/training_sessions/" + timestamp + "/weights.pt")
-    net.save_model_weights(weights_file)
+    model_file = Path(cwd  + "/training_sessions/" + timestamp + "/model.pb")
+    torch.save(net ,model_file)
 
     # Save images of incorrectly labeled test sets
     # print(wrong_tests.shape, " wrong tests")
@@ -267,7 +271,7 @@ if __name__ == "__main__":
     #     *args, **kwargs)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+    device = "cpu"
     print(device)
 
     parser = argparse.ArgumentParser(description="Convolutional Neural Network(CNN) Model for 10-707(Deep Learning) project")
@@ -275,6 +279,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     im_dir = args.image_directory
+    im_dir = os.getcwd() + "/training_images/"
 
     x_pos, y_pos, x_neg, y_neg = import_data(im_dir)
 
@@ -296,11 +301,12 @@ if __name__ == "__main__":
     metadata_dict = {
         "Patch Size": x.shape[2],
         "Batch Size" : 42,
+        "Dropout": 0.1,
         "Pooling": 2,
         "Learning Rate" : 0.0001,
         "Kernel Size" : 3,
         "Padding" : 1,
-        "Epochs" : 50,
+        "Epochs" : 5,
         "Test Loss" : 0,
         "Test Error" : 0
     }
@@ -315,13 +321,17 @@ if __name__ == "__main__":
 
     # Network Params: c1_out, c2_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size
 
-    c1_filters = 4
-    c2_filters = 16
-    c3_filters = 64
+    c1_filters = 8
+    c2_filters = 64
+    c3_filters = 512
     f1_nodes = 200
     f2_nodes = 100
 
-    net = ConvNet(c1_filters, c2_filters, c3_filters, f1_nodes, f2_nodes, 2, metadata_dict["Kernel Size"], metadata_dict["Patch Size"], metadata_dict["Pooling"], metadata_dict["Padding"])
+    net = ConvNet(c1_filters, c2_filters, c3_filters, 
+                f1_nodes, f2_nodes, 2, metadata_dict["Kernel Size"], 
+                metadata_dict["Patch Size"], metadata_dict["Pooling"], 
+                metadata_dict["Padding"], metadata_dict["Dropout"])
+
     net.batch_size = metadata_dict["Batch Size"]
     net.epochs = metadata_dict["Epochs"]
     net.to(device)
