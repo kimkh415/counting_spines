@@ -5,11 +5,11 @@ Contains code for a scanner object which traveses provided images
 and outputs predicted output maps
 """
 
-import os, sys, argparse
+import os, argparse
 from pathlib import Path
-from cnn import ConvNet
 import numpy as np
 import torch
+from cnn import ConvNet
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim  as optim
@@ -126,9 +126,6 @@ class Scanner():
                 # print(torch.max(cur_out,1))
                 _, out_map[x-self.patch_size,y-self.patch_size] = torch.max(cur_out,1)
 
-        plt.imshow(out_map)
-        plt.show()
-
         return out_map
 
     def store_scanned_data(self):
@@ -150,13 +147,20 @@ class Scanner():
         self.load_images_labels()       # Load image data
 
         for i in range(len(self.data)):
-            if i == 1:
+            if i == 5:
                 break
             print("Scanning Image: ", i, " -------------------------------")
             cur_im = self.data[i]["image"]
             cur_out = self.scan_single_image(cur_im)
             self.data[i]["scanned output"] = cur_out
-        
+
+            plt.imshow(cur_im)
+            plt.savefig("cur_im.png")
+            plt.clf()
+            plt.imshow(cur_out)
+            plt.savefig("cur_out.png")
+            plt.clf()
+
         self.store_scanned_data()
 
 
