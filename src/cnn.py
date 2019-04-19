@@ -168,8 +168,8 @@ def rand_split_data(x, y, p):
     :return: all partitioned datasets (train, val, test) for (x,y)
     """
     shuffle_inds = np.random.shuffle(np.arange(len(x)))
-    shuff_x = x[shuffle_inds]
-    shuff_y = y[shuffle_inds]
+    shuff_x = x[shuffle_inds].reshape(x.shape)
+    shuff_y = y[shuffle_inds].reshape(y.shape)
 
     # Split shuffled data
     xl = len(shuff_x)
@@ -268,7 +268,7 @@ if __name__ == "__main__":
     #     *args, **kwargs)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device = "cpu"
+    # device = "cpu"
     print(device)
 
     parser = argparse.ArgumentParser(
@@ -315,9 +315,9 @@ if __name__ == "__main__":
 
     # Network Params: c1_out, c2_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size
 
-    c1_filters = 8
-    c2_filters = 64
-    c3_filters = 512
+    c1_filters = 4
+    c2_filters = 16
+    c3_filters = 64
     f1_nodes = 200
     f2_nodes = 100
 
