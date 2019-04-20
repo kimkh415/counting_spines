@@ -73,22 +73,30 @@ def create_training_images(tifs, coords, outname, patch_dim, norm_factor):
             avoid.append((new_x, new_y))
 
             box = arr[new_x - int(patch_dim/2): new_x + int(patch_dim/2), new_y - int(patch_dim/2): new_y + int(patch_dim/2)]
-            pos = box.reshape((1, patch_dim, patch_dim))/norm_factor
-            pos_examples.append(pos)
-            cur_positives.append(pos)
+
+            if not os.path.exists(Path(outname + "positive_examples/")):
+                        os.makedirs(Path(outname + "positive_examples/"))
+
+            if not os.path.exists(Path(outname + "negative_examples/")):
+                os.makedirs(Path(outname + "negative_examples/"))
+
+            for i in range(4):
+                pos = box.reshape((1, patch_dim, patch_dim)) / norm_factor
+                pos_examples.append(pos)
+                cur_positives.append(pos)
+
+                tr_im = Image.fromarray(box)
+                tr_im.save(outname + "positive_examples/" + "spine_image{}-{}.tif".format(pos_idx, i))
+                box = np.rot90(box)
+                pos_idx += 1
+
             cur_pos_dist = analyze_positive_examples(cur_positives)
             strategy_dict = {
                 "type": 1,
                 "threshold": cur_pos_dist[-1] * 10.0
             }
 
-            tr_im = Image.fromarray(box)
-            if not os.path.exists(Path(outname + "positive_examples/")):
-                os.makedirs(Path(outname + "positive_examples/"))
-            tr_im.save(outname + "positive_examples/" + "spine_image{}.tif".format(pos_idx))
-            pos_idx += 1
-
-        for _ in avoid:
+        for _ in range(len(avoid)*4):
 
             too_dim = True              # Check if an image that does not overlap also is not too dim
             fails = 0
@@ -103,20 +111,18 @@ def create_training_images(tifs, coords, outname, patch_dim, norm_factor):
                     overlap = check_overlap((x, y), avoid, patch_dim)
 
                 box = arr[x - int(patch_dim/2): x + int(patch_dim/2), y - int(patch_dim/2): y + int(patch_dim/2)]
-
                 too_dim = not pass_negative_filter(box, strategy_dict)
 
-            print(fails)
-            neg_examples.append(box.reshape((1, patch_dim, patch_dim))/norm_factor)
+            # print(fails)
 
+            neg_examples.append(box.reshape((1, patch_dim, patch_dim))/norm_factor)
             tr_im = Image.fromarray(box)
-            if not os.path.exists(Path(outname + "negative_examples/")):
-                os.makedirs(Path(outname + "negative_examples/"))
             tr_im.save(outname + "negative_examples/" + "spine_image{}.tif".format(neg_idx))
+            box = np.rot90(box)
             neg_idx += 1
 
     print(np.array(pos_examples).shape, "pos examples")
-    print(np.array(pos_examples).shape, "pos examples")
+    print(np.array(neg_examples).shape, "neg examples")
 
     np.save(outname + "np_arr_pos_x.npy", np.array(pos_examples))
     np.save(outname + "np_arr_pos_y.npy", np.ones((len(pos_examples),1)))
@@ -126,12 +132,15 @@ def create_training_images(tifs, coords, outname, patch_dim, norm_factor):
 
 def check_overlap(point, box, patch_dim):
     (x, y) = point
-
+    half_patch = patch_dim/2
+    flex_factor = 0.8
+    bound = int(half_patch * flex_factor)
     for coord in box:
-        if coord[0]-int(patch_dim/2) < x < coord[0] + int(patch_dim/2) and coord[1] - int(patch_dim/2) < y < coord[1] + int(patch_dim/2):
+        if coord[0] - bound < x < coord[0] + bound and coord[1] - bound < y < coord[1] + bound:
             return True
 
     return False
+
 
 def analyze_positive_examples(positive_patches):
     """
@@ -147,6 +156,7 @@ def analyze_positive_examples(positive_patches):
         summed_intensities.append(np.sum(positive_patches[x]))
 
     return summed_intensities
+
 
 def pass_negative_filter(image, strategy, pass_through=0.05):
     """
@@ -188,16 +198,13 @@ def pass_negative_filter(image, strategy, pass_through=0.05):
             return True
 
 
-
 if __name__ == "__main__":
-
 
     parser = argparse.ArgumentParser(description="Data Preprocessing and patch \
     generation code")
     parser.add_argument("im_dir", help="Directory including the raw images to be \
     processed")
     args = parser.parse_args()
-
 
     tifs, infos = get_file_paths(args.im_dir)
 
