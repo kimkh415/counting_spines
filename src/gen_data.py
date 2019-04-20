@@ -72,7 +72,6 @@ def create_training_images(tifs, coords, outname, patch_dim, norm_factor):
             avoid.append((new_x, new_y))
 
             box = arr[new_x - int(patch_dim/2): new_x + int(patch_dim/2), new_y - int(patch_dim/2): new_y + int(patch_dim/2)]
-            pos_examples.append(box.reshape((1, patch_dim, patch_dim))/norm_factor)
 
             if not os.path.exists(Path(outname + "positive_examples/")):
                         os.makedirs(Path(outname + "positive_examples/"))
@@ -81,6 +80,7 @@ def create_training_images(tifs, coords, outname, patch_dim, norm_factor):
                 os.makedirs(Path(outname + "negative_examples/"))
 
             for i in range(4):  
+                pos_examples.append(box.reshape((1, patch_dim, patch_dim))/norm_factor)
                 tr_im = Image.fromarray(box)
                 tr_im.save(outname + "positive_examples/" + "spine_image{}-{}.tif".format(pos_idx, i))
                 box = np.rot90(box)
@@ -97,9 +97,9 @@ def create_training_images(tifs, coords, outname, patch_dim, norm_factor):
                 overlap = check_overlap((x, y), avoid, patch_dim)
 
             box = arr[x - int(patch_dim/2): x + int(patch_dim/2), y - int(patch_dim/2): y + int(patch_dim/2)]
-            neg_exampels.append(box.reshape((1, patch_dim, patch_dim))/norm_factor)
 
             for i in range(4):
+                neg_exampels.append(box.reshape((1, patch_dim, patch_dim))/norm_factor)
                 tr_im = Image.fromarray(box)
                 tr_im.save(outname + "negative_examples/" + "spine_image{}-{}.tif".format(neg_idx, i))
                 box = np.rot90(box)
