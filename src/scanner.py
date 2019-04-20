@@ -24,8 +24,9 @@ import matplotlib.pyplot as plt
 
 class Scanner():
 
-    def __init__(self, image_dir, model_path, patch_size, output_dir):
+    def __init__(self, image_dir, model_path, patch_size, output_dir, norm_factor):
 
+        self.norm_factor = norm_factor
         self.image_dir= image_dir
         print(image_dir)
         self.model = torch.load(model_path, map_location="cpu")
@@ -103,6 +104,7 @@ class Scanner():
         :return: Scanning output map of size pre-padded image
         """
 
+        image = image/self.norm_factor              #Normalize!
         out_map = np.zeros((image.shape))
         print(out_map.shape)
         max_x = self.patch_size + image.shape[0]
@@ -114,8 +116,8 @@ class Scanner():
         print(max(scan_interval_x))
         print(max(scan_interval_y))
 
-        for x in scan_interval_x:
-            for y in scan_interval_y:
+        for x in scan_interval_x[::1]:
+            for y in scan_interval_y[::1]:
                 print(x, " , ", y, " patch center coords, ImDims: (", str(image.shape[0]), ",", str(image.shape[1]), ")")
                 half = int(self.patch_size/2)
                 patch = padded[x - half: x + half, y - half: y + half]
@@ -135,7 +137,7 @@ class Scanner():
         store_path = Path.joinpath(self.output_dir, "scanned_data.p")
         pickle.dump(self.data, open(store_path, "wb" ))
 
-    def scan_all_images(self):
+    def scan_all_images(self, outdir):
         """
         Scans all images in provided directory
         """
@@ -147,24 +149,21 @@ class Scanner():
         self.load_images_labels()       # Load image data
 
         for i in range(len(self.data)):
-            if i == 5:
-                break
+            if (i%100) != 0:
+                continue
             print("Scanning Image: ", i, " -------------------------------")
             cur_im = self.data[i]["image"]
             cur_out = self.scan_single_image(cur_im)
             self.data[i]["scanned output"] = cur_out
 
             plt.imshow(cur_im)
-            plt.savefig("cur_im.png")
+            plt.savefig(os.path.join(outdir, str(i) + "_cur_im.png"))
             plt.clf()
             plt.imshow(cur_out)
-            plt.savefig("cur_out.png")
+            plt.savefig(os.path.join(outdir, str(i) + "_cur_out.png"))
             plt.clf()
 
         self.store_scanned_data()
-
-
-
 
 
 if __name__ == "__main__":
@@ -179,6 +178,9 @@ if __name__ == "__main__":
     # python scanner.py 40 C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\Labeled_Spines_Tavita\ C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\counting_spines\src\training_sessions\2019-04-1515_00_29\weights.pt C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\counting_spines\src\training_sessions\2019-04-1515_00_29\
     # Create scanner object
 
-    scanner = Scanner(Path(args.images_dir), Path(args.model_path), int(args.patch_size), Path(args.output_dir))
-    scanner.scan_all_images()
-
+    norm_factor = 100
+    scanner = Scanner(Path(args.images_dir), Path(args.model_path), int(args.patch_size), Path(args.output_dir), norm_factor)
+    figdir = os.path.join(args.output_dir, "prediction_figures")
+    if os.path.isdir(figdir) is False:
+        os.mkdir(figdir)
+    scanner.scan_all_images(figdir)
