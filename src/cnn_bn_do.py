@@ -5,6 +5,7 @@ Contains code for training convolutional neural networks for predicting
 dendritic spine presence from pre-constructed training patches.
 """
 
+import sys
 import argparse
 import os
 import numpy as np
@@ -16,6 +17,7 @@ import datetime
 from PIL import Image
 from pathlib import Path
 import matplotlib.pyplot as plt
+from pytorch_modelsize import SizeEstimator
 
 
 class ConvNet(nn.Module):
@@ -284,6 +286,8 @@ if __name__ == "__main__":
 
     x = torch.as_tensor(np.concatenate((x_pos, x_neg)), dtype=torch.float, device=device)
     y = torch.as_tensor(np.concatenate((y_pos, y_neg)), dtype=torch.long, device=device)
+    print(sys.getsizeof(x))
+    print(sys.getsizeof(y))
     y = y.view((len(y)))
 
     print(x.device, "x device")
@@ -315,11 +319,11 @@ if __name__ == "__main__":
 
     # Network Params: c1_out, c2_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size
 
-    c1_filters = 4
-    c2_filters = 16
-    c3_filters = 64
-    f1_nodes = 200
-    f2_nodes = 100
+    c1_filters = 3
+    c2_filters = 9
+    c3_filters = 27
+    f1_nodes = 50
+    f2_nodes = 50
 
     net = ConvNet(c1_filters, c2_filters, c3_filters,
                   f1_nodes, f2_nodes, 2, metadata_dict["Kernel Size"],
