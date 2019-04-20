@@ -16,7 +16,6 @@ import datetime
 from PIL import Image
 from pathlib import Path
 import matplotlib.pyplot as plt
-import pickle
 
 
 class ConvNet(nn.Module):
@@ -26,7 +25,8 @@ class ConvNet(nn.Module):
     out_size = number of labels
     """
 
-    def __init__(self, c1_out, c2_out, c3_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size, pad, dropout_prob):
+    def __init__(self, c1_out, c2_out, c3_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size, pad,
+                 dropout_prob):
         super(ConvNet, self).__init__()
         # 1 input image channel
         print(patch_size)
@@ -34,24 +34,24 @@ class ConvNet(nn.Module):
 
         self.conv1 = nn.Conv2d(1, c1_out, kernel_size, padding=pad)
         self.conv2 = nn.Conv2d(c1_out, c2_out, kernel_size, padding=pad)
-        # self.bn1 = nn.BatchNorm2d(c2_out)
-        # self.do1 = nn.Dropout2d(self.dp)
+        self.bn1 = nn.BatchNorm2d(c2_out)
+        self.do1 = nn.Dropout2d(self.dp)
         self.conv3 = nn.Conv2d(c2_out, c3_out, kernel_size, padding=pad)
-        # self.bn2 = nn.BatchNorm2d(c3_out)
-        # self.do2 = nn.Dropout2d(self.dp)
+        self.bn2 = nn.BatchNorm2d(c3_out)
+        self.do2 = nn.Dropout2d(self.dp)
 
         self.pool_size = pool_size
-        self.convout_size = int(c3_out * (patch_size/pool_size**3)**2)
+        self.convout_size = int(c3_out * (patch_size / pool_size ** 3) ** 2)
         # self.convout_size = 3600
- 
+
         print(self.convout_size, " size of convolution output")
 
         self.fc1 = nn.Linear(self.convout_size, l1_out)
-        # self.bn3 = nn.BatchNorm1d(l1_out)
-        # self.do3 = nn.Dropout(self.dp)
+        self.bn3 = nn.BatchNorm1d(l1_out)
+        self.do3 = nn.Dropout(self.dp)
         self.fc2 = nn.Linear(l1_out, l2_out)
-        # self.bn4 = nn.BatchNorm1d(l2_out)
-        # self.do4 = nn.Dropout(self.dp)
+        self.bn4 = nn.BatchNorm1d(l2_out)
+        self.do4 = nn.Dropout(self.dp)
         self.fc3 = nn.Linear(l2_out, out_size)
 
     def forward(self, x):
@@ -64,16 +64,16 @@ class ConvNet(nn.Module):
         # print(p1.shape, " p1")
         c2 = F.relu(self.conv2(p1))
         # print(c2.shape, " c2")
-        # bn1 = self.bn1(c2)
-        # do1 = self.do1(bn1)
-        p2 = F.max_pool2d(c2, self.pool_size)
+        bn1 = self.bn1(c2)
+        do1 = self.do1(bn1)
+        p2 = F.max_pool2d(do1, self.pool_size)
         # print(p2.shape, " p2")
 
         c3 = F.relu(self.conv3(p2))
         # print(c3.shape, " c3")
-        # bn2 = self.bn2(c3)
-        # do2 = self.do1(bn2)
-        p3 = F.max_pool2d(c3, self.pool_size)
+        bn2 = self.bn2(c3)
+        do2 = self.do1(bn2)
+        p3 = F.max_pool2d(do2, self.pool_size)
         # print(p3.shape, " p3")
 
         # Fully Connected
@@ -81,13 +81,13 @@ class ConvNet(nn.Module):
         # print(flat.shape, " flat")
         f1 = F.relu(self.fc1(flat))
         # print(f1.shape, " f1")l3
-        # bn3 = self.bn3(f1)
-        # do3 = self.do3(bn3)
+        bn3 = self.bn3(f1)
+        do3 = self.do3(bn3)
 
-        f2 = F.relu(self.fc2(f1))
-        # bn4 = self.bn4(f2)
-        # do4 = self.do4(bn4)
-        f3 = self.fc3(f2)
+        f2 = F.relu(self.fc2(do3))
+        bn4 = self.bn4(f2)
+        do4 = self.do4(bn4)
+        f3 = self.fc3(bn4)
 
         return f3
 
@@ -127,7 +127,6 @@ def import_data(dirname):
 
 
 def sample_batch(x, y, batch_size):
-
     all_inds = np.arange(len(x))
 
     sample_inds = np.random.choice(all_inds, batch_size)
@@ -136,7 +135,6 @@ def sample_batch(x, y, batch_size):
 
 
 def pc(decimal):
-
     percent = decimal * 100
     str_pc = str(percent)
 
@@ -149,15 +147,15 @@ def epoch_loss_error(model, set_x, set_y):
     # print("epoch losses")
     forward_out = model.forward(set_x)
     # print(forward_out)
-    
-    _, preds = torch.max(forward_out,1)
+
+    _, preds = torch.max(forward_out, 1)
     overlap = torch.eq(preds, set_y)
     # print(overlap)
-    accuracy = float(torch.sum(overlap))/len(overlap)
+    accuracy = float(torch.sum(overlap)) / len(overlap)
 
     loss_out = model.objective(forward_out, set_y)
     # print(loss_out)
-    return float(loss_out), (1-accuracy), ~overlap
+    return float(loss_out), (1 - accuracy), ~overlap
 
 
 def rand_split_data(x, y, p):
@@ -173,20 +171,16 @@ def rand_split_data(x, y, p):
     shuff_x = x[shuffle_inds].reshape(x.shape)
     shuff_y = y[shuffle_inds].reshape(y.shape)
 
-    print(x.shape)
-    print(y.shape)
-    print(shuff_x.shape)
-    print(shuff_y.shape)
-
     # Split shuffled data
-    xl = len(x)
-    data_splits = [int(p[0]*xl), int(p[1]*xl), xl - int(p[0]*xl) - int(p[1]*xl)]
+    xl = len(shuff_x)
+    data_splits = [int(p[0] * xl), int(p[1] * xl), xl - int(p[0] * xl) - int(p[1] * xl)]
     x_training, x_val, x_test = torch.split(shuff_x, data_splits)
     y_training, y_val, y_test = torch.split(shuff_y, data_splits)
 
     return x_training, x_val, x_test, y_training, y_val, y_test
 
-def record_training(data, metadata, net, wrong_tests, correct_labels):
+
+def record_training(data, metadata, net, wrong_tests, correct_labels, outputdir):
     """ 
     Save plots and associated metadata for a given training session
 
@@ -200,10 +194,10 @@ def record_training(data, metadata, net, wrong_tests, correct_labels):
     cwd = os.getcwd()
 
     # Create timestamped directory
-    if not os.path.exists(Path(cwd + "/training_sessions/")):
-        os.makedirs(Path(cwd + "/training_sessions/"))
-    
-    save_dir = Path(cwd  + "/training_sessions/" + timestamp + "/")
+    if not os.path.exists(Path(outputdir)):
+        os.makedirs(Path(outputdir))
+
+    save_dir = Path(os.path.join(outputdir, timestamp))
     os.makedirs(save_dir)
 
     # Output metadata
@@ -219,14 +213,14 @@ def record_training(data, metadata, net, wrong_tests, correct_labels):
         "\n"
     ]
 
-    meta_file = Path(cwd  + "/training_sessions/" + timestamp + "/metadata.txt")
+    meta_file = Path(cwd + "/training_sessions/" + timestamp + "/metadata.txt")
     with open(meta_file, "w") as m:
         m.write("\n".join(metadata_text))
         print(net, file=m)
 
     # Save model weights
-    model_file = Path(cwd  + "/training_sessions/" + timestamp + "/model.pb")
-    torch.save(net ,model_file)
+    model_file = Path(cwd + "/training_sessions/" + timestamp + "/model.pb")
+    torch.save(net, model_file)
 
     # Save images of incorrectly labeled test sets
     # print(wrong_tests.shape, " wrong tests")
@@ -234,15 +228,15 @@ def record_training(data, metadata, net, wrong_tests, correct_labels):
     wrong_tests = wrong_tests.cpu()
     wrong_tests_np = wrong_tests.numpy()
 
-    wrong_dir = Path(cwd  + "/training_sessions/" + timestamp + "/incorrect_labelings/")
+    wrong_dir = Path(cwd + "/training_sessions/" + timestamp + "/incorrect_labelings/")
     os.makedirs(wrong_dir)
 
     for x in range(len(wrong_tests)):
-        sub_image = wrong_tests_np[x]. reshape((metadata["Patch Size"], metadata["Patch Size"]))
+        sub_image = wrong_tests_np[x].reshape((metadata["Patch Size"], metadata["Patch Size"]))
         # print(sub_image.shape, type(sub_image), " sub image")
         wrong_image = Image.fromarray(sub_image)
-        wrong_image.save(Path(cwd  + "/training_sessions/" + timestamp + 
-                "/incorrect_labelings/" + str(x) + "_" + str(int(correct_labels[x])) + ".tif"))
+        wrong_image.save(Path(cwd + "/training_sessions/" + timestamp +
+                              "/incorrect_labelings/" + str(x) + "_" + str(int(correct_labels[x])) + ".tif"))
 
     # Plot training data
 
@@ -252,19 +246,17 @@ def record_training(data, metadata, net, wrong_tests, correct_labels):
     plt.ylabel("loss")
     plt.title("Training Loss")
     plt.legend()
-    fig_file = Path()
-    loss_file  = Path(cwd  + "/training_sessions/" + timestamp + "/train_loss.png")
+    loss_file = Path(cwd + "/training_sessions/" + timestamp + "/train_loss.png")
     plt.savefig(loss_file)
     plt.clf()
-    
+
     plt.plot(data["training_errors"], label="train error")
     plt.plot(data["validation_errors"], label="val error")
     plt.xlabel("epoch")
     plt.ylabel("error")
     plt.title("Training Error")
     plt.legend()
-    fig_file = Path()
-    error_file  = Path(cwd  + "/training_sessions/" + timestamp + "/train_error.png")
+    error_file = Path(cwd + "/training_sessions/" + timestamp + "/train_error.png")
     plt.savefig(error_file)
     plt.clf()
 
@@ -276,26 +268,23 @@ if __name__ == "__main__":
     #     *args, **kwargs)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device = "cpu"
+    # device = "cpu"
     print(device)
 
-    parser = argparse.ArgumentParser(description="Convolutional Neural Network(CNN) Model for 10-707(Deep Learning) project")
+    parser = argparse.ArgumentParser(
+        description="Convolutional Neural Network(CNN) Model for 10-707(Deep Learning) project")
     parser.add_argument("image_directory", help="File path to the positive data arrays. Excludes _(x/y).npy extension")
+    parser.add_argument("outputdir", help="Output directory to save model.")
     args = parser.parse_args()
 
     im_dir = args.image_directory
-    im_dir = os.getcwd() + "/training_images/"
+    # im_dir = os.getcwd() + "/training_images/"
 
     x_pos, y_pos, x_neg, y_neg = import_data(im_dir)
 
     x = torch.as_tensor(np.concatenate((x_pos, x_neg)), dtype=torch.float, device=device)
     y = torch.as_tensor(np.concatenate((y_pos, y_neg)), dtype=torch.long, device=device)
     y = y.view((len(y)))
-
-    # x.to('cuda')
-    # y.to('cuda')
-    # x.cuda()
-    # y.cuda()
 
     print(x.device, "x device")
     print(y.device, "y device")
@@ -305,15 +294,15 @@ if __name__ == "__main__":
 
     metadata_dict = {
         "Patch Size": x.shape[2],
-        "Batch Size" : 42,
+        "Batch Size": 42,
         "Dropout": 0.1,
         "Pooling": 2,
-        "Learning Rate" : 0.0001,
-        "Kernel Size" : 3,
-        "Padding" : 1,
-        "Epochs" : 20,
-        "Test Loss" : 0,
-        "Test Error" : 0
+        "Learning Rate": 0.0001,
+        "Kernel Size": 3,
+        "Padding": 1,
+        "Epochs": 50,
+        "Test Loss": 0,
+        "Test Error": 0
     }
 
     # CAN START CROSS-VALIDATION LOOP HERE
@@ -326,25 +315,24 @@ if __name__ == "__main__":
 
     # Network Params: c1_out, c2_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size
 
-    c1_filters = 8
-    c2_filters = 64
-    c3_filters = 512
+    c1_filters = 4
+    c2_filters = 16
+    c3_filters = 64
     f1_nodes = 200
     f2_nodes = 100
 
-    net = ConvNet(c1_filters, c2_filters, c3_filters, 
-                f1_nodes, f2_nodes, 2, metadata_dict["Kernel Size"], 
-                metadata_dict["Patch Size"], metadata_dict["Pooling"], 
-                metadata_dict["Padding"], metadata_dict["Dropout"])
+    net = ConvNet(c1_filters, c2_filters, c3_filters,
+                  f1_nodes, f2_nodes, 2, metadata_dict["Kernel Size"],
+                  metadata_dict["Patch Size"], metadata_dict["Pooling"],
+                  metadata_dict["Padding"], metadata_dict["Dropout"])
 
     net.batch_size = metadata_dict["Batch Size"]
     net.epochs = metadata_dict["Epochs"]
     net.to(device)
     net.float()
-    # net.cuda()
-    print(net)
+    # print(net)
     net.objective = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(net.parameters(), lr = metadata_dict["Learning Rate"])
+    optimizer = optim.Adam(net.parameters(), lr=metadata_dict["Learning Rate"])
 
     # Initial training metrics
     train_loss, train_error, _ = epoch_loss_error(net, x_training, y_training)
@@ -352,20 +340,19 @@ if __name__ == "__main__":
     print("\tTraining Error: ", pc(train_error))
     val_loss, val_error, _ = epoch_loss_error(net, x_val, y_val)
     print("\tValidation Loss: ", val_loss)
-    print("\tValidation Error: ", pc(val_error))     
+    print("\tValidation Error: ", pc(val_error))
     loss_error = {
-        "training_losses" : [train_loss],
-        "validation_losses" : [val_loss],
-        "training_errors" : [train_error],
-        "validation_errors" : [val_error]
+        "training_losses": [train_loss],
+        "validation_losses": [val_loss],
+        "training_errors": [train_error],
+        "validation_errors": [val_error]
     }
 
     # Start Training
     for x in range(net.epochs):
         net.train()
         print("Epoch: ", x, " start")
-        for y in range(int(len(x_training)/net.batch_size)):
-    
+        for y in range(int(len(x_training) / net.batch_size)):
             batch_x, batch_y = sample_batch(x_training, y_training, net.batch_size)
             optimizer.zero_grad()
             output = net(batch_x)
@@ -378,13 +365,13 @@ if __name__ == "__main__":
         print("\tTraining Error: ", pc(train_error))
         val_loss, val_error, _ = epoch_loss_error(net, x_val, y_val)
         print("\tValidation Loss: ", val_loss)
-        print("\tValidation Error: ", pc(val_error))    
-    
+        print("\tValidation Error: ", pc(val_error))
+
         loss_error["training_losses"].append(train_loss)
         loss_error["training_errors"].append(train_error)
         loss_error["validation_losses"].append(val_loss)
         loss_error["validation_errors"].append(val_error)
-        
+
     test_loss, test_error, wrong_labels = epoch_loss_error(net, x_test, y_test)
 
     print("Training Complete, Reporting Test Results")
@@ -393,8 +380,4 @@ if __name__ == "__main__":
     metadata_dict["Test Loss"] = test_loss
     metadata_dict["Test Error"] = test_error
 
-    record_training(loss_error, metadata_dict, net, x_test[wrong_labels], y_test[wrong_labels])
-
-
-
-
+    record_training(loss_error, metadata_dict, net, x_test[wrong_labels], y_test[wrong_labels], args.outputdir)
