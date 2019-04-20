@@ -74,11 +74,17 @@ def create_training_images(tifs, coords, outname, patch_dim, norm_factor):
             box = arr[new_x - int(patch_dim/2): new_x + int(patch_dim/2), new_y - int(patch_dim/2): new_y + int(patch_dim/2)]
             pos_examples.append(box.reshape((1, patch_dim, patch_dim))/norm_factor)
 
-            tr_im = Image.fromarray(box)
             if not os.path.exists(Path(outname + "positive_examples/")):
-                os.makedirs(Path(outname + "positive_examples/"))
-            tr_im.save(outname + "positive_examples/" + "spine_image{}.tif".format(pos_idx))
-            pos_idx += 1
+                        os.makedirs(Path(outname + "positive_examples/"))
+
+            if not os.path.exists(Path(outname + "negative_examples/")):
+                os.makedirs(Path(outname + "negative_examples/"))
+
+            for i in range(4):  
+                tr_im = Image.fromarray(box)
+                tr_im.save(outname + "positive_examples/" + "spine_image{}-{}.tif".format(pos_idx, i))
+                box = np.rot90(box)
+                pos_idx += 1
 
         for _ in avoid:
 
@@ -93,11 +99,11 @@ def create_training_images(tifs, coords, outname, patch_dim, norm_factor):
             box = arr[x - int(patch_dim/2): x + int(patch_dim/2), y - int(patch_dim/2): y + int(patch_dim/2)]
             neg_exampels.append(box.reshape((1, patch_dim, patch_dim))/norm_factor)
 
-            tr_im = Image.fromarray(box)
-            if not os.path.exists(Path(outname + "negative_examples/")):
-                os.makedirs(Path(outname + "negative_examples/"))
-            tr_im.save(outname + "negative_examples/" + "spine_image{}.tif".format(neg_idx))
-            neg_idx += 1
+            for i in range(4):
+                tr_im = Image.fromarray(box)
+                tr_im.save(outname + "negative_examples/" + "spine_image{}-{}.tif".format(neg_idx, i))
+                box = np.rot90(box)
+                neg_idx += 1
 
     print(np.array(pos_examples).shape, "pos examples")
 
