@@ -122,11 +122,21 @@ class Scanner():
                 half = int(self.patch_size/2)
                 patch = padded[x - half: x + half, y - half: y + half]
                 patch = np.reshape(patch, (1,1,self.patch_size, self.patch_size))
-                patch = torch.as_tensor(patch, dtype=torch.float, device=self.device)              
-                cur_out = self.model.forward(patch)
+                patch = torch.as_tensor(patch, dtype=torch.float, device=self.device)
+                cur_out = self.model.forward(patch).detach().numpy()
+                # print(cur_out.shape, "cur_out")
+                soft_out = np.exp(cur_out)/np.sum(np.exp(cur_out))
+                # print(soft_out, "soft_out")
+                # softmax_maxout_bin = np.argmax(soft_out)
+                # output_prob = soft_out[softmax_maxout_bin]
+                # print(soft_out[1])
                 # print(cur_out)
                 # print(torch.max(cur_out,1))
-                _, out_map[x-self.patch_size,y-self.patch_size] = torch.max(cur_out,1)
+                # if softmax_maxout_bin == 1:
+                #     print("yes")
+                #     out_map[x-self.patch_size,y-self.patch_size] = output_prob
+
+                out_map[x - self.patch_size, y - self.patch_size] = soft_out[0, 1]
 
         return out_map
 
