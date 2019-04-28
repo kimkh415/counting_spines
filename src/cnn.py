@@ -242,7 +242,7 @@ def record_training(data, metadata, net, wrong_tests, correct_labels):
         # print(sub_image.shape, type(sub_image), " sub image")
         wrong_image = Image.fromarray(sub_image)
         wrong_image.save(Path(cwd  + "/training_sessions/" + timestamp + 
-                "/incorrect_labelings/" + str(x) + "_" + str(int(correct_labels[x])) + ".tif"))
+                "/incorrect_labelings/" + str(x) + "_" + str(int(correct_labels[x])) + ".png"))
 
     # Plot training data
 
