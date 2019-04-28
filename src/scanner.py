@@ -70,7 +70,6 @@ class Scanner():
             f = open(fname, 'r')
             lines = f.read()
             m = re.findall("x = (-?[0-9]*), y = (-?[0-9]*)", lines)
-
             return m
 
 
@@ -118,7 +117,7 @@ class Scanner():
 
         for x in scan_interval_x[::1]:
             for y in scan_interval_y[::1]:
-                print(x, " , ", y, " patch center coords, ImDims: (", str(image.shape[0]), ",", str(image.shape[1]), ")")
+                # print(x, " , ", y, " patch center coords, ImDims: (", str(image.shape[0]), ",", str(image.shape[1]), ")")
                 half = int(self.patch_size/2)
                 patch = padded[x - half: x + half, y - half: y + half]
                 patch = np.reshape(patch, (1,1,self.patch_size, self.patch_size))
@@ -163,10 +162,22 @@ class Scanner():
                 continue
             print("Scanning Image: ", i, " -------------------------------")
             cur_im = self.data[i]["image"]
+
             cur_out = self.scan_single_image(cur_im)
             self.data[i]["scanned output"] = cur_out
 
-            plt.imshow(cur_im)
+            for center in self.data[i]["centers"]:
+                print(center)
+                q_patch = 3
+                e_patch = 1
+                label_im = np.ones((q_patch, q_patch)) * 255
+                label_out = np.ones((q_patch, q_patch)) * 1.3
+                cur_im[int(center[1])-e_patch:int(center[1])+e_patch+1, 
+                int(center[0])-e_patch:int(center[0])+e_patch+1] = label_im
+                cur_out[int(center[1])-e_patch:int(center[1])+e_patch+1, 
+                int(center[0])-e_patch:int(center[0])+e_patch+1] = label_out
+
+            plt.imshow(cur_im, cmap='gray')
             plt.savefig(os.path.join(outdir, str(i) + "_cur_im.png"))
             plt.clf()
             plt.imshow(cur_out)
