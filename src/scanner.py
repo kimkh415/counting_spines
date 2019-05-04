@@ -91,7 +91,7 @@ class Scanner():
                     "scanned output": np.zeros(im.shape)
                 }
             )
-        
+
         self.data = data
 
     def scan_single_image(self, image):
