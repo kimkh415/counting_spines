@@ -198,10 +198,10 @@ if __name__ == "__main__":
     parser.add_argument("output_dir", help="Output directory for counting output")
     args = parser.parse_args()
 
-    clust_scaling_iter = [2*x for x in range(1,10)]
+    clust_scaling_iter = [2*x for x in range(0,5)]
     distance_metric_iter = ["euclidean", "manhattan"]
-    eps_iter = [x for x in range(1,15)]
-    min_samp_iter = [10*x for x in range(1, 20)]
+    eps_iter = [x for x in range(1,5)]
+    min_samp_iter = [10*x for x in range(4, 8)]
 
     # clust_scaling_iter = [16]
     # distance_metric_iter = ["euclidean", "manhattan"]
