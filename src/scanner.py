@@ -144,7 +144,7 @@ class Scanner():
         Stores scanned image data structure as a pickle
         """
         store_path = Path.joinpath(self.output_dir, "scanned_data.p")
-        pickle.dump(self.data, open(store_path, "wb" ))
+        pickle.dump(self.data, open(store_path, "wb"))
 
     def scan_all_images(self, outdir):
         """

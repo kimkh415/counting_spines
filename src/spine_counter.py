@@ -94,7 +94,7 @@ class DBScan_Counter():
                 for y in range(grid_shape[2]):
                     for z in range(grid_shape[3]):
 
-                        for i in range(0,grid_shape[4], skip_image_factor):
+                        for i in range(1,grid_shape[4], skip_image_factor):
                             print([w,x,y,z,i])
                             image_dict = self.data[i]
                             count, masses = self.count_single_image(image_dict["clusterable"],
@@ -106,6 +106,7 @@ class DBScan_Counter():
                             actual_spine_counts.append(num_spine)
                             error_per_image.append(err)
                             full_grid_array[w, x, y, z, i] = err
+
         full_grid_array = full_grid_array[:, :, :, :, ::skip_image_factor]
         average_accs_full = np.mean(full_grid_array, axis=4)
 
@@ -122,18 +123,17 @@ class DBScan_Counter():
         self.min_hyperparams = min_hyperparams
 
         print("Averages Shape: ", average_accs_full.shape)
-        print("Minimum Val: ", np.min(average_accs_full))
+        print("Minimum Val: ", min_acc)
         print("Min Hyperparams: ", min_hyperparams)
-
 
         # Plot clusters as images
 
         self.convert_to_clusterables(min_hyperparams["cluster scaling"])
-        for i in range(0,grid_shape[4], skip_image_factor):
+        for i in range(1,grid_shape[4], skip_image_factor):
             image_dict = self.data[i]
-            count, masses = self.count_single_image(image_dict["clusterable"], 
+            count, masses = self.count_single_image(image_dict["clusterable"],
                                                     min_hyperparams["distance metric"],
-                                                    min_hyperparams["epsilon"], 
+                                                    min_hyperparams["epsilon"],
                                                     min_hyperparams["minimum samples"]
                                                     )
             self.data[i]["cluster labels"] = masses
@@ -148,15 +148,15 @@ class DBScan_Counter():
                     if os.path.isdir(os.path.join(self.output_dir, "prediction_figures/")) is False:
                         os.mkdir(os.path.join(self.output_dir, "prediction_figures/"))
 
-                    plt.imshow(clus_im)
-                    plt.savefig(os.path.join(self.output_dir, "prediction_figures/" + str(i) + "_clust_im.png"))
-                    plt.clf()
+            plt.imshow(clus_im)
+            plt.savefig(os.path.join(self.output_dir, "prediction_figures/" + str(i) + "_cur_out_clust.png"))
+            plt.clf()
+
         return error_per_image, actual_spine_counts
 
     def store_clustered_data(self):
         """
         Stores clustered image data structure as a pickle
-
         {
             "image",
             "centers",
@@ -183,6 +183,7 @@ class DBScan_Counter():
     def compute_accuracy(self, count, image_dict):
 
         raw_dist = abs(image_dict["count"] - count)
+
         print("count: " + str(count))
         print("true count: " + str(image_dict["count"]))
         print("error: ", str(raw_dist))
@@ -216,10 +217,10 @@ if __name__ == "__main__":
     parser.add_argument("output_dir", help="Output directory for counting output")
     args = parser.parse_args()
 
-    clust_scaling_iter = [16]  # [2*x for x in range(1,10)]
-    distance_metric_iter = ["manhattan"]  # ["euclidean", "manhattan"]
-    eps_iter = [6]  # [x for x in range(5,15)]
-    min_samp_iter = [60]  # [10*x for x in range(1, 20)]
+    clust_scaling_iter = [2*x for x in range(0,5)]
+    distance_metric_iter = ["euclidean", "manhattan"]
+    eps_iter = [x for x in range(1,5)]
+    min_samp_iter = [10*x for x in range(4, 8)]
 
     counter = DBScan_Counter(args.scans_path, args.output_dir, clust_scaling_iter, distance_metric_iter, eps_iter,
                              min_samp_iter)
