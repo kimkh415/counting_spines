@@ -152,6 +152,8 @@ def epoch_loss_error(model, set_x, set_y):
     
     _, preds = torch.max(forward_out,1)
     overlap = torch.eq(preds, set_y)
+
+
     # print(overlap)
     accuracy = float(torch.sum(overlap))/len(overlap)
 
