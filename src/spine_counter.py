@@ -6,22 +6,13 @@ given image given the scanned output map from the scanning step
 """
 
 import os, argparse
-from pathlib import Path
 import numpy as np
-import torch
-from cnn import ConvNet
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim  as optim
-import random
-import torchvision
-import torchvision.transforms as transforms
-from PIL import Image
-import re
 import pickle
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 from sklearn.cluster import DBSCAN
+
 
 class DBScan_Counter():
 
@@ -61,28 +52,26 @@ class DBScan_Counter():
             for x in range(imshape[0]):
                 for y in range(imshape[1]):
                     # print(image[x,y], x, y)
-                    if image[x,y] < 0.3:
+                    if image[x, y] < 0.3:
                         # clusterable.append(1000 * np.ones((1,3)))
                         continue
                     else:
-                        cur_vec = np.zeros((1,3))
-                        cur_vec[0,0] = image[x,y] * scaling
-                        cur_vec[0,1] = x        
-                        cur_vec[0,2] = y
+                        cur_vec = np.zeros((1, 3))
+                        cur_vec[0, 0] = image[x, y] * scaling
+                        cur_vec[0, 1] = x
+                        cur_vec[0, 2] = y
 
                         clusterable.append(cur_vec[:])
 
                     c_ind += 1
             if len(clusterable) == 0:
-                return np.array([[0,0,0]])
+                return np.array([[0, 0, 0]])
             stacked = np.stack(clusterable, axis=0)
-            correct_stacked = stacked.reshape((stacked.shape[0],stacked.shape[2]))
+            correct_stacked = stacked.reshape((stacked.shape[0], stacked.shape[2]))
             return correct_stacked
-
 
         for x in range(len(self.data)):
             self.data[x]["clusterable"] = convert_single(self.data[x]["scanned output"])
-
 
     def full_grid_search(self):
         """
@@ -92,24 +81,32 @@ class DBScan_Counter():
         skip_image_factor = 100
 
         grid_shape = (len(self.clust_scalings), len(self.distance_metrics), len(self.epsilon_iter), len(self.min_samp_iter), len(self.data))
+
         full_grid_array = np.zeros((grid_shape))
         print("Grid Shape", grid_shape)
+
+        error_per_image = []
+        actual_spine_counts = []
+
         for w in range(grid_shape[0]):
             self.convert_to_clusterables(self.clust_scalings[w])
             for x in range(grid_shape[1]):
                 for y in range(grid_shape[2]):
                     for z in range(grid_shape[3]):
+
                         for i in range(0,grid_shape[4], skip_image_factor):
                             print([w,x,y,z,i])
                             image_dict = self.data[i]
-                            count, masses = self.count_single_image(image_dict["clusterable"], 
+                            count, masses = self.count_single_image(image_dict["clusterable"],
                                                                     self.distance_metrics[x],
-                                                                    self.epsilon_iter[y], 
+                                                                    self.epsilon_iter[y],
                                                                     self.min_samp_iter[z]
                                                                     )
-                            accuracy = self.compute_accuracy(count, image_dict)
-                            full_grid_array[w,x,y,z,i] = accuracy
-        full_grid_array = full_grid_array[:,:,:,:,::100]
+                            err, num_spine = self.compute_accuracy(count, image_dict)
+                            actual_spine_counts.append(num_spine)
+                            error_per_image.append(err)
+                            full_grid_array[w, x, y, z, i] = err
+        full_grid_array = full_grid_array[:, :, :, :, ::skip_image_factor]
         average_accs_full = np.mean(full_grid_array, axis=4)
 
         min_coords = np.unravel_index(np.argmin(average_accs_full), average_accs_full.shape)
@@ -127,6 +124,7 @@ class DBScan_Counter():
         print("Averages Shape: ", average_accs_full.shape)
         print("Minimum Val: ", np.min(average_accs_full))
         print("Min Hyperparams: ", min_hyperparams)
+
 
         # Plot clusters as images
 
@@ -153,6 +151,7 @@ class DBScan_Counter():
                     plt.imshow(clus_im)
                     plt.savefig(os.path.join(self.output_dir, "prediction_figures/" + str(i) + "_clust_im.png"))
                     plt.clf()
+        return error_per_image, actual_spine_counts
 
     def store_clustered_data(self):
         """
@@ -178,21 +177,40 @@ class DBScan_Counter():
         scanned_output = DBSCAN(eps=eps, min_samples=min_samples, metric=metric).fit(clusterable)
         clus_labels = scanned_output.labels_
         count = len(set(clus_labels)) - (1 if -1 in clus_labels else 0)
-        # print(clus_labels)
-        
+
         return count, clus_labels
-        
+
     def compute_accuracy(self, count, image_dict):
 
-        raw_dist = abs(image_dict["count"]- count)
+        raw_dist = abs(image_dict["count"] - count)
         print("count: " + str(count))
         print("true count: " + str(image_dict["count"]))
         print("error: ", str(raw_dist))
-        return raw_dist
+        return raw_dist, image_dict["count"]
+
+
+def plot_hist(arr, bins, x_label, outname):
+
+    plt.figure()
+
+    plt.rc('axes', linewidth=2)
+    plt.rc('font', weight='bold')
+    axis_label_properties = {
+        'family': 'sans-serif',
+        'weight': 'bold',
+        'size': 24}
+    plt.tick_params(axis='both', which='both', labelsize=15, width=3, pad=3, direction='in', top=False, right=False)
+
+    h, b, patches = plt.hist(arr, bins=bins-0.5, density=True, rwidth=0.5)
+    plt.ylabel("Probability", **axis_label_properties)
+    plt.xlabel(x_label, **axis_label_properties)
+    plt.xticks(bins)
+
+    plt.tight_layout()
+    plt.savefig(outname)
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(description="Processing of scanned output maps into actual dendritic spine counts")
     parser.add_argument("scans_path", help="Output path of scanned image maps")
     parser.add_argument("output_dir", help="Output directory for counting output")
@@ -203,12 +221,17 @@ if __name__ == "__main__":
     eps_iter = [x for x in range(1,5)]
     min_samp_iter = [10*x for x in range(4, 8)]
 
-    # clust_scaling_iter = [16]
-    # distance_metric_iter = ["euclidean", "manhattan"]
-    # eps_iter = [8]
-    # min_samp_iter = [10*x for x in range(8, 12)]
+    counter = DBScan_Counter(args.scans_path, args.output_dir, clust_scaling_iter, distance_metric_iter, eps_iter,
+                             min_samp_iter)
+    errors, num_spines = counter.full_grid_search()
 
-    counter = DBScan_Counter(args.scans_path, args.output_dir, clust_scaling_iter, distance_metric_iter, eps_iter, min_samp_iter)
-    counter.full_grid_search()
+    print(errors)
+    print(num_spines)
+
+    max_err = max(errors)
+    max_num_sp = max(num_spines)
+
+    plot_hist(errors, np.arange(max_err+2), "|True count - Predicted count|", os.path.join(args.output_dir, "err_hist.png"))
+    plot_hist(num_spines, np.arange(max_num_sp+2), "Number of spines", os.path.join(args.output_dir, "num_spine_hist.png"))
 
     # python scanner.py 40 C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\Labeled_Spines_Tavita\ C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\counting_spines\src\training_sessions\2019-04-1515_00_29\weights.pt C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\counting_spines\src\training_sessions\2019-04-1515_00_29\
