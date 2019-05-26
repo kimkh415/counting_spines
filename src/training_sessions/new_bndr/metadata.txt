@@ -1,0 +1,33 @@
+Patch Size: 40
+Batch Size: 32
+Dropout: 0.1
+Learning Rate: 0.0001
+Kernel Size: 3
+Epochs: 20
+Train Loss: 0.003260938450694084
+Train Error: 0.00096229025079686
+Train Confusion: 16577,16,16,16645
+Val Loss: 0.023158423602581024
+Val Error: 0.006615745474228718
+Val Confusion: 8276,53,57,8241
+Test Loss: 0.01619330793619156
+Test Error: 0.004510193036261989
+Test Confusion: 2779,11,14,2739
+
+ConvNet(
+  (conv1): Conv2d(1, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  (conv2): Conv2d(16, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  (bn1): BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (do1): Dropout2d(p=0.1)
+  (conv3): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (do2): Dropout2d(p=0.1)
+  (fc1): Linear(in_features=1600, out_features=200, bias=True)
+  (bn3): BatchNorm1d(200, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (do3): Dropout(p=0.1)
+  (fc2): Linear(in_features=200, out_features=100, bias=True)
+  (bn4): BatchNorm1d(100, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (do4): Dropout(p=0.1)
+  (fc3): Linear(in_features=100, out_features=2, bias=True)
+  (objective): CrossEntropyLoss()
+)
