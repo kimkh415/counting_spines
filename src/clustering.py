@@ -5,10 +5,6 @@ Contains code for doing clustering on scanned output.
 """
 
 import os, sys, argparse, pathlib
-from src.cnn import ConvNet
-import torch
-import numpy as np
-
 
 if __name__ == "__main__":
 

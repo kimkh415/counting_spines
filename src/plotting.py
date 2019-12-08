@@ -1,7 +1,7 @@
 import os, sys
 import numpy as np
 from PIL import Image
-from gen_data import get_file_paths, extract_centers
+gen_data = __import__("1_gen_data")
 
 
 def plot_centers_on_original(tifs, centers, outdir):
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     output_pwd = sys.argv[1]
 
     original_image = "D:\github_repos\counting_spines\Labeled_Spines_Tavita"
-    tifs, infos = get_file_paths(original_image)
-    centers = extract_centers(infos)
+    tifs, infos = gen_data.get_file_paths(original_image)
+    centers = gen_data.extract_centers(infos)
 
     plot_centers_on_original(tifs, centers, output_pwd)
