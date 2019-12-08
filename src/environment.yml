@@ -1,0 +1,9 @@
+name: counting_spines
+dependencies:
+  - python=3.6
+  - numpy=1.9.*
+  - pytorch
+  - matplotlib=3.0.3
+  - pillow=6.2.1
+  - scikit-learn
+

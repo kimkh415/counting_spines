@@ -4,8 +4,8 @@ Authors: Kwanho Kim, Saideep Gona, Jinke Liu
 Contains code for doing clustering on scanned output. 
 """
 
-import os, sys, argparse pathlib
-from cnn import ConvNet
+import os, sys, argparse, pathlib
+from src.cnn import ConvNet
 import torch
 import numpy as np
 

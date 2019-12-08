@@ -9,22 +9,6 @@ import os, argparse
 from pathlib import Path
 import numpy as np
 import torch
-<<<<<<< HEAD
-# import torch.nn as nn
-# import torch.nn.functional as F
-# import torch.optim  as optim
-# import random
-# import torchvision
-# import torchvision.transforms as transforms
-=======
-from cnn import ConvNet
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim  as optim
-import random
-import torchvision
-import torchvision.transforms as transforms
->>>>>>> c917b43448bf4e02a08995c953b4e1b9ccdbaaf5
 from PIL import Image
 import re
 import pickle

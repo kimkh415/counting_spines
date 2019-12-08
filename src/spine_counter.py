@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from sklearn.metrics.cluster import adjusted_mutual_info_score
 from sklearn.cluster import DBSCAN
-from PIL import Image
 
 
 class DBScan_Counter():
