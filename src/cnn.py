@@ -271,7 +271,7 @@ if __name__ == "__main__":
     #     *args, **kwargs)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    device = "cpu"
+    # device = "cpu"
     print(device)
 
     parser = argparse.ArgumentParser(description="Convolutional Neural Network(CNN) Model for 10-707(Deep Learning) project")
@@ -306,7 +306,7 @@ if __name__ == "__main__":
         "Learning Rate" : 0.0001,
         "Kernel Size" : 3,
         "Padding" : 1,
-        "Epochs" : 5,
+        "Epochs" : 10,
         "Test Loss" : 0,
         "Test Error" : 0
     }
@@ -321,9 +321,9 @@ if __name__ == "__main__":
 
     # Network Params: c1_out, c2_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size
 
-    c1_filters = 8
-    c2_filters = 64
-    c3_filters = 512
+    c1_filters = 4
+    c2_filters = 16
+    c3_filters = 64
     f1_nodes = 200
     f2_nodes = 100
 

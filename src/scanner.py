@@ -5,17 +5,16 @@ Contains code for a scanner object which traveses provided images
 and outputs predicted output maps
 """
 
-import os, sys, argparse
+import os, argparse
 from pathlib import Path
-from cnn import ConvNet
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim  as optim
-import random
-import torchvision
-import torchvision.transforms as transforms
+# import torch.nn as nn
+# import torch.nn.functional as F
+# import torch.optim  as optim
+# import random
+# import torchvision
+# import torchvision.transforms as transforms
 from PIL import Image
 import re
 import pickle
