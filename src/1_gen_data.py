@@ -160,7 +160,7 @@ def analyze_positive_examples(positive_patches):
 
 def pass_negative_filter(image, strategy, pass_through=0.05):
     """
-    Strategy 1: If the overall intensitr of an image is above a threshold, return True
+    Strategy 1: If the overall intensity of an image is above a threshold, return True
                 {
                 "strategy": 1,
                 "threshold": summed intensity value
