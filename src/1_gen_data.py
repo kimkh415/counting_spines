@@ -12,6 +12,7 @@ import sys
 import os
 import re
 from pathlib import Path
+import configparser
 
 from sklearn.preprocessing import scale
 
@@ -75,7 +76,7 @@ def create_training_images(tifs, coords, outname, patch_dim, norm_factor):
             box = arr[new_x - int(patch_dim/2): new_x + int(patch_dim/2), new_y - int(patch_dim/2): new_y + int(patch_dim/2)]
 
             if not os.path.exists(Path(outname + "positive_examples/")):
-                        os.makedirs(Path(outname + "positive_examples/"))
+                os.makedirs(Path(outname + "positive_examples/"))
 
             if not os.path.exists(Path(outname + "negative_examples/")):
                 os.makedirs(Path(outname + "negative_examples/"))
@@ -202,16 +203,24 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Data Preprocessing and patch \
     generation code")
-    parser.add_argument("im_dir", help="Directory including the raw images to be \
-    processed")
+    # parser.add_argument("im_dir", help="Directory including the raw images to be \
+    # processed")
+    parser.add_argument("config_file", help="Path to config file for pipeline")
     args = parser.parse_args()
 
-    tifs, infos = get_file_paths(args.im_dir)
+    config = configparser.ConfigParser()
+    config.sections()
+    config.read(args.config_file)
+
+    root_out = config['DEFAULT']['output_directory']
+
+    tifs, infos = get_file_paths(config['DEFAULT']['image_directory'])
+    # tifs, infos = get_file_paths(args.im_dir)
 
     coords = extract_centers(infos)
 
-    patch_dim = 40
-    norm_factor = 100
+    patch_dim = int(config['DEFAULT']['patch_dim'])
+    norm_factor = int(config['DEFAULT']['norm_factor'])
 
-    create_training_images(tifs, coords, "training_images/", patch_dim, norm_factor)
+    create_training_images(tifs, coords, root_out + "/training_images/", patch_dim, norm_factor)
 

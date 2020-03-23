@@ -13,7 +13,8 @@ from PIL import Image
 import re
 import pickle
 import matplotlib.pyplot as plt
-
+import configparser
+import glob
 
 class Scanner():
 
@@ -183,18 +184,42 @@ class Scanner():
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Image scanner for  10-707(Deep Learning) project")
-    parser.add_argument("patch_size", help="Size of model patch size")
-    parser.add_argument("images_dir", help="Directory containing images to be processed")
-    parser.add_argument("model_path", help="Path to saved model")
-    parser.add_argument("output_dir", help="Output directory of scanned image maps")
+    # parser.add_argument("patch_size", help="Size of model patch size")
+    # parser.add_argument("images_dir", help="Directory containing images to be processed")
+    parser.add_argument("--model_dir", help="Path to directory containing trained model. Chooses the most recent by default")
+    # parser.add_argument("output_dir", help="Output directory of scanned image maps")
+    # args = parser.parse_args()
+
+    parser.add_argument("config_file", help="Path to config file for pipeline")
     args = parser.parse_args()
+
+    config = configparser.ConfigParser()
+    config.sections()
+    config.read(args.config_file)
+
+    image_dir = config['DEFAULT']['image_directory']
+
+    training_sessions_dir = config['DEFAULT']['output_directory']  + "/training_sessions/"
+
+    output_dir = max(glob.glob(os.path.join(training_sessions_dir, '*/')), key=os.path.getmtime)
+
+    most_recent_model = output_dir + "/model.pb"
+
+    output_dir = 
+
+    if args.model_path:
+        if os.isdir(args.model_dir):
+            most_recent_model = args.model_path
+            output_dir = args.model_path
+        else:
+            print("Model directory is not a directory")
 
     # python scanner.py 40 C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\Labeled_Spines_Tavita\ C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\counting_spines\src\training_sessions\2019-04-1515_00_29\weights.pt C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\counting_spines\src\training_sessions\2019-04-1515_00_29\
     # Create scanner object
 
-    norm_factor = 100
-    scanner = Scanner(Path(args.images_dir), Path(args.model_path), int(args.patch_size), Path(args.output_dir), norm_factor)
-    figdir = os.path.join(args.output_dir, "prediction_figures")
+    # scanner = Scanner(Path(args.images_dir), Path(args.model_path), int(args.patch_size), Path(args.output_dir), norm_factor)
+    scanner = Scanner(Path(image_dir), Path(most_recent_model), int(config['DEFAULT']['patch_dim']), Path(output_dir), int(config['DEFAULT']['norm_factor']))
+    figdir = os.path.join(output_dir, "prediction_figures")
     if os.path.isdir(figdir) is False:
         os.mkdir(figdir)
     scanner.scan_all_images(figdir)

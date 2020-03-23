@@ -17,7 +17,7 @@ from PIL import Image
 from pathlib import Path
 import matplotlib.pyplot as plt
 import pickle
-
+import configparser
 
 class ConvNet(nn.Module):
     """
@@ -188,7 +188,7 @@ def rand_split_data(x, y, p):
 
     return x_training, x_val, x_test, y_training, y_val, y_test
 
-def record_training(data, metadata, net, wrong_tests, correct_labels):
+def record_training(data, metadata, net, wrong_tests, correct_labels, output_dir):
     """ 
     Save plots and associated metadata for a given training session
 
@@ -202,10 +202,10 @@ def record_training(data, metadata, net, wrong_tests, correct_labels):
     cwd = os.getcwd()
 
     # Create timestamped directory
-    if not os.path.exists(Path(cwd + "/training_sessions/")):
-        os.makedirs(Path(cwd + "/training_sessions/"))
+    if not os.path.exists(Path(output_dir + "/training_sessions/")):
+        os.makedirs(Path(output_dir + "/training_sessions/"))
     
-    save_dir = Path(cwd  + "/training_sessions/" + timestamp + "/")
+    save_dir = Path(output_dir  + "/training_sessions/" + timestamp + "/")
     os.makedirs(save_dir)
 
     # Output metadata
@@ -221,13 +221,13 @@ def record_training(data, metadata, net, wrong_tests, correct_labels):
         "\n"
     ]
 
-    meta_file = Path(cwd  + "/training_sessions/" + timestamp + "/metadata.txt")
+    meta_file = Path(output_dir  + "/training_sessions/" + timestamp + "/metadata.txt")
     with open(meta_file, "w") as m:
         m.write("\n".join(metadata_text))
         print(net, file=m)
 
     # Save model weights
-    model_file = Path(cwd  + "/training_sessions/" + timestamp + "/model.pb")
+    model_file = Path(output_dir  + "/training_sessions/" + timestamp + "/model.pb")
     torch.save(net ,model_file)
 
     # Save images of incorrectly labeled test sets
@@ -236,14 +236,14 @@ def record_training(data, metadata, net, wrong_tests, correct_labels):
     wrong_tests = wrong_tests.cpu()
     wrong_tests_np = wrong_tests.numpy()
 
-    wrong_dir = Path(cwd  + "/training_sessions/" + timestamp + "/incorrect_labelings/")
+    wrong_dir = Path(output_dir  + "/training_sessions/" + timestamp + "/incorrect_labelings/")
     os.makedirs(wrong_dir)
 
     for x in range(len(wrong_tests)):
         sub_image = wrong_tests_np[x]. reshape((metadata["Patch Size"], metadata["Patch Size"]))
         # print(sub_image.shape, type(sub_image), " sub image")
         wrong_image = Image.fromarray(sub_image)
-        wrong_image.save(Path(cwd  + "/training_sessions/" + timestamp + 
+        wrong_image.save(Path(output_dir  + "/training_sessions/" + timestamp + 
                 "/incorrect_labelings/" + str(x) + "_" + str(int(correct_labels[x])) + ".png"))
 
     # Plot training data
@@ -255,7 +255,7 @@ def record_training(data, metadata, net, wrong_tests, correct_labels):
     plt.title("Training Loss")
     plt.legend()
     fig_file = Path()
-    loss_file  = Path(cwd  + "/training_sessions/" + timestamp + "/train_loss.png")
+    loss_file  = Path(output_dir  + "/training_sessions/" + timestamp + "/train_loss.png")
     plt.savefig(loss_file)
     plt.clf()
     
@@ -266,7 +266,7 @@ def record_training(data, metadata, net, wrong_tests, correct_labels):
     plt.title("Training Error")
     plt.legend()
     fig_file = Path()
-    error_file  = Path(cwd  + "/training_sessions/" + timestamp + "/train_error.png")
+    error_file  = Path(output_dir  + "/training_sessions/" + timestamp + "/train_error.png")
     plt.savefig(error_file)
     plt.clf()
 
@@ -282,11 +282,19 @@ if __name__ == "__main__":
     print(device)
 
     parser = argparse.ArgumentParser(description="Convolutional Neural Network(CNN) Model for 10-707(Deep Learning) project")
-    parser.add_argument("image_directory", help="File path to the positive data arrays. Excludes _(x/y).npy extension")
+    # parser.add_argument("image_directory", help="File path to the positive data arrays. Excludes _(x/y).npy extension")
+    parser.add_argument("config_file", help="Path to config file for pipeline")
     args = parser.parse_args()
 
-    im_dir = args.image_directory
-    im_dir = os.getcwd() + "/training_images/"
+    config = configparser.ConfigParser()
+    config.sections()
+    config.read(args.config_file)
+
+    root_out = config['DEFAULT']['output_directory']
+    im_dir = root_out + "/training_images/"
+
+    # im_dir = args.image_directory
+    # im_dir = os.getcwd() + "/training_images/"
 
     x_pos, y_pos, x_neg, y_neg = import_data(im_dir)
 
@@ -305,34 +313,48 @@ if __name__ == "__main__":
     print("Shape of X: ", x.shape)
     print("Shape of y: ", y.shape)
 
+    # metadata_dict = {
+    #     "Patch Size": x.shape[2],
+    #     "Batch Size" : 42,
+    #     "Dropout": 0.1,
+    #     "Pooling": 2,
+    #     "Learning Rate" : 0.0001,
+    #     "Kernel Size" : 3,
+    #     "Padding" : 1,
+    #     "Epochs" : 20,
+    #     "Test Loss" : 0,
+    #     "Test Error" : 0
+    # }
+
     metadata_dict = {
         "Patch Size": x.shape[2],
-        "Batch Size" : 42,
-        "Dropout": 0.1,
-        "Pooling": 2,
-        "Learning Rate" : 0.0001,
-        "Kernel Size" : 3,
-        "Padding" : 1,
-        "Epochs" : 20,
+        "Batch Size" : int(config['cnn']['batch_size']),
+        "Dropout": float(config['cnn']['dropout']),
+        "Pooling": int(config['cnn']['pooling']),
+        "Learning Rate" : float(config['cnn']['learning_rate']),
+        "Kernel Size" : int(config['cnn']['kernel_size']),
+        "Padding" : int(config['cnn']['padding']),
+        "Epochs" : int(config['cnn']['training_epochs']),
         "Test Loss" : 0,
         "Test Error" : 0
     }
 
+
     # CAN START CROSS-VALIDATION LOOP HERE
 
     # Shuffle data before partitioning
-    partition = (0.6, 0.3)
+    partition = (float(config['cnn']['partition_train']), float(config['cnn']['parition_val']))
     x_training, x_val, x_test, y_training, y_val, y_test = rand_split_data(x, y, partition)
 
     print("Dataset Partitions:", str(len(x_training)) + " , " + str(len(x_val)) + " , " + str(len(x_test)) + " ")
 
     # Network Params: c1_out, c2_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size
 
-    c1_filters = 8
-    c2_filters = 64
-    c3_filters = 512
-    f1_nodes = 200
-    f2_nodes = 100
+    c1_filters = int(config['cnn']['c1_filters'])
+    c2_filters = int(config['cnn']['c2_filters'])
+    c3_filters = int(config['cnn']['c3_filters'])
+    f1_nodes = int(config['cnn']['f1_nodes'])
+    f2_nodes = int(config['cnn']['f2_nodes'])
 
     net = ConvNet(c1_filters, c2_filters, c3_filters, 
                 f1_nodes, f2_nodes, 2, metadata_dict["Kernel Size"], 
@@ -395,5 +417,5 @@ if __name__ == "__main__":
     metadata_dict["Test Loss"] = test_loss
     metadata_dict["Test Error"] = test_error
 
-    record_training(loss_error, metadata_dict, net, x_test[wrong_labels], y_test[wrong_labels])
+    record_training(loss_error, metadata_dict, net, x_test[wrong_labels], y_test[wrong_labels], root_out)
 

@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 from sklearn.metrics.cluster import adjusted_mutual_info_score
 from sklearn.cluster import DBSCAN
-
+import configparser
 
 class DBScan_Counter():
 
@@ -254,19 +254,30 @@ def plot_hist(arr, bins, x_label, outname):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Processing of scanned output maps into actual dendritic spine counts")
-    parser.add_argument("scans_path", help="Output path of scanned image maps")
-    parser.add_argument("output_dir", help="Output directory for counting output")
+    # parser.add_argument("scans_path", help="Output path of scanned image maps")
+    # parser.add_argument("output_dir", help="Output directory for counting output")
+    parser.add_argument("--model_path", help="Path to saved model. Chooses the most recent by default")
+    parser.add_argument("config_file", help="Path to config file for pipeline")
     args = parser.parse_args()
+
+    config = configparser.ConfigParser()
+    config.sections()
+    config.read(args.config_file)
 
     # clust_scaling_iter = [2*x for x in range(0,5)]
     # distance_metric_iter = ["euclidean", "manhattan"]
     # eps_iter = [x for x in range(1,5)]
     # min_samp_iter = [10*x for x in range(4, 8)]
 
-    clust_scaling_iter = [8]
-    distance_metric_iter = ["euclidean"]
-    eps_iter = [4]
-    min_samp_iter = [40]
+    # clust_scaling_iter = [8]
+    # distance_metric_iter = ["euclidean"]
+    # eps_iter = [4]
+    # min_samp_iter = [40]
+
+    clust_scaling_iter = [int(x) for x in config['spine_counter']['clust_scaling_iter'].split(",")]
+    distance_metric_iter = [x for x in config['spine_counter']['distance_metric_iter'].split(",")]
+    eps_iter = [int(x) for x in config['spine_counter']['eps_iter'].split(",")]
+    min_samp_iter = [int(x) for x in config['spine_counter']['min_samp_iter'].split(",")] 
 
     counter = DBScan_Counter(args.scans_path, args.output_dir, clust_scaling_iter, distance_metric_iter, eps_iter,
                              min_samp_iter)
