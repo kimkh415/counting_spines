@@ -9,6 +9,9 @@ import os, argparse
 from pathlib import Path
 import numpy as np
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim  as optim
 from PIL import Image
 import re
 import pickle
@@ -16,14 +19,101 @@ import matplotlib.pyplot as plt
 import configparser
 import glob
 
+class ConvNet(nn.Module):
+    """
+    c1_out = convolutional layer 1 filter count
+    c2_out = convolutional layer 2 filter count
+    out_size = number of labels
+    """
+
+    def __init__(self, c1_out, c2_out, c3_out, l1_out, l2_out, out_size, kernel_size, patch_size, pool_size, pad, dropout_prob):
+        super(ConvNet, self).__init__()
+        # 1 input image channel
+        print(patch_size)
+        self.dp = dropout_prob
+
+        self.conv1 = nn.Conv2d(1, c1_out, kernel_size, padding=pad)
+        self.conv2 = nn.Conv2d(c1_out, c2_out, kernel_size, padding=pad)
+        # self.bn1 = nn.BatchNorm2d(c2_out)
+        # self.do1 = nn.Dropout2d(self.dp)
+        self.conv3 = nn.Conv2d(c2_out, c3_out, kernel_size, padding=pad)
+        # self.bn2 = nn.BatchNorm2d(c3_out)
+        # self.do2 = nn.Dropout2d(self.dp)
+
+        self.pool_size = pool_size
+        self.convout_size = int(c3_out * (patch_size/pool_size**3)**2)
+        # self.convout_size = 3600
+ 
+        print(self.convout_size, " size of convolution output")
+
+        self.fc1 = nn.Linear(self.convout_size, l1_out)
+        # self.bn3 = nn.BatchNorm1d(l1_out)
+        # self.do3 = nn.Dropout(self.dp)
+        self.fc2 = nn.Linear(l1_out, l2_out)
+        # self.bn4 = nn.BatchNorm1d(l2_out)
+        # self.do4 = nn.Dropout(self.dp)
+        self.fc3 = nn.Linear(l2_out, out_size)
+
+    def forward(self, x):
+        # print(type(x))
+        # Convolutions + Pooling
+        # print(x.shape, " x")
+        c1 = F.relu(self.conv1(x))
+        # print(c1.shape, " c1")
+        p1 = F.max_pool2d(c1, self.pool_size)
+        # print(p1.shape, " p1")
+        c2 = F.relu(self.conv2(p1))
+        # print(c2.shape, " c2")
+        # bn1 = self.bn1(c2)
+        # do1 = self.do1(bn1)
+        p2 = F.max_pool2d(c2, self.pool_size)
+        # print(p2.shape, " p2")
+
+        c3 = F.relu(self.conv3(p2))
+        # print(c3.shape, " c3")
+        # bn2 = self.bn2(c3)
+        # do2 = self.do1(bn2)
+        p3 = F.max_pool2d(c3, self.pool_size)
+        # print(p3.shape, " p3")
+
+        # Fully Connected
+        flat = p3.view(-1, self.convout_size)
+        # print(flat.shape, " flat")
+        f1 = F.relu(self.fc1(flat))
+        # print(f1.shape, " f1")l3
+        # bn3 = self.bn3(f1)
+        # do3 = self.do3(bn3)
+
+        f2 = F.relu(self.fc2(f1))
+        # bn4 = self.bn4(f2)
+        # do4 = self.do4(bn4)
+        f3 = self.fc3(f2)
+
+        return f3
+
+    def num_flat_features(self, x):
+        size = x.size()[1:]  # all dimensions except the batch dimension
+        num_features = 1
+        for s in size:
+            num_features *= s
+        return num_features
+
+    def save_model_weights(self, filepath):
+        torch.save(self.state_dict(), filepath)
+
+    def load_model_weights(self, model_name):
+        self.load_state_dict(torch.load(model_name))
+
+
 class Scanner():
 
     def __init__(self, image_dir, model_path, patch_size, output_dir, norm_factor):
 
         self.norm_factor = norm_factor
         self.image_dir= image_dir
-        print(image_dir)
-        self.model = torch.load(model_path, map_location="cpu")
+        # model = nn.Module.ConvNet()
+        self.model = torch.load(model_path,map_location="cpu")
+        # self.model = torch.load_state_dict(torch.load(model_path), map_location="cpu")
         self.model.eval()            # Must be ON for running inference
 
         self.patch_size = int(patch_size)
@@ -199,24 +289,24 @@ if __name__ == "__main__":
 
     image_dir = config['DEFAULT']['image_directory']
 
-    training_sessions_dir = config['DEFAULT']['output_directory']  + "/training_sessions/"
+    training_sessions_dir = os.path.join(config['DEFAULT']['output_directory'], "training_sessions")
 
     output_dir = max(glob.glob(os.path.join(training_sessions_dir, '*/')), key=os.path.getmtime)
 
-    most_recent_model = output_dir + "/model.pb"
+    most_recent_model = os.path.join(output_dir, "model.pb")
 
-    output_dir = 
-
-    if args.model_path:
-        if os.isdir(args.model_dir):
-            most_recent_model = args.model_path
-            output_dir = args.model_path
-        else:
-            print("Model directory is not a directory")
+    if hasattr(args, "model_dir"):
+        if args.model_dir != None:
+            if os.path.isdir(args.model_dir):
+                most_recent_model = args.model_dir
+                output_dir = args.model_dir
+            else:
+                print("Model directory is not a directory")
 
     # python scanner.py 40 C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\Labeled_Spines_Tavita\ C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\counting_spines\src\training_sessions\2019-04-1515_00_29\weights.pt C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\counting_spines\src\training_sessions\2019-04-1515_00_29\
     # Create scanner object
-
+    print("MOST RECENT")
+    print(most_recent_model)
     # scanner = Scanner(Path(args.images_dir), Path(args.model_path), int(args.patch_size), Path(args.output_dir), norm_factor)
     scanner = Scanner(Path(image_dir), Path(most_recent_model), int(config['DEFAULT']['patch_dim']), Path(output_dir), int(config['DEFAULT']['norm_factor']))
     figdir = os.path.join(output_dir, "prediction_figures")

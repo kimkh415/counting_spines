@@ -115,11 +115,11 @@ def one_hot_y(y, size):
 
 
 def import_data(dirname):
-    x_pos = np.load(Path(dirname + "/np_arr_pos_x.npy"))
-    y_pos = np.load(Path(dirname + "/np_arr_pos_y.npy"))
+    x_pos = np.load(Path(os.path.join(dirname, "np_arr_pos_x.npy")))
+    y_pos = np.load(Path(os.path.join(dirname, "np_arr_pos_y.npy")))
 
-    x_neg = np.load(Path(dirname + "/np_arr_neg_x.npy"))
-    y_neg = np.load(Path(dirname + "/np_arr_neg_y.npy"))
+    x_neg = np.load(Path(os.path.join(dirname, "np_arr_neg_x.npy")))
+    y_neg = np.load(Path(os.path.join(dirname, "np_arr_neg_y.npy")))
     # x = arr[:,:, :-1]
     # y = arr[:,:, -1]
     # y = one_hot_y(y, 2)
@@ -202,10 +202,11 @@ def record_training(data, metadata, net, wrong_tests, correct_labels, output_dir
     cwd = os.getcwd()
 
     # Create timestamped directory
-    if not os.path.exists(Path(output_dir + "/training_sessions/")):
-        os.makedirs(Path(output_dir + "/training_sessions/"))
+    if not os.path.exists(Path(os.path.join(output_dir, "training_sessions"))):
+        os.makedirs(Path(os.path.join(output_dir,"training_sessions")))
     
-    save_dir = Path(output_dir  + "/training_sessions/" + timestamp + "/")
+    save_dir = Path(os.path.join(output_dir,"training_sessions",timestamp))
+    print(save_dir)
     os.makedirs(save_dir)
 
     # Output metadata
@@ -221,14 +222,14 @@ def record_training(data, metadata, net, wrong_tests, correct_labels, output_dir
         "\n"
     ]
 
-    meta_file = Path(output_dir  + "/training_sessions/" + timestamp + "/metadata.txt")
+    meta_file = Path(os.path.join(output_dir,"training_sessions",timestamp,"metadata.txt"))
     with open(meta_file, "w") as m:
         m.write("\n".join(metadata_text))
         print(net, file=m)
 
     # Save model weights
-    model_file = Path(output_dir  + "/training_sessions/" + timestamp + "/model.pb")
-    torch.save(net ,model_file)
+    model_file = Path(os.path.join(output_dir,"training_sessions",timestamp,"model.pb"))
+    torch.save(net , model_file)
 
     # Save images of incorrectly labeled test sets
     # print(wrong_tests.shape, " wrong tests")
@@ -236,15 +237,17 @@ def record_training(data, metadata, net, wrong_tests, correct_labels, output_dir
     wrong_tests = wrong_tests.cpu()
     wrong_tests_np = wrong_tests.numpy()
 
-    wrong_dir = Path(output_dir  + "/training_sessions/" + timestamp + "/incorrect_labelings/")
+    wrong_dir = Path(os.path.join(output_dir,"training_sessions",timestamp,"incorrect_labelings"))
     os.makedirs(wrong_dir)
 
     for x in range(len(wrong_tests)):
         sub_image = wrong_tests_np[x]. reshape((metadata["Patch Size"], metadata["Patch Size"]))
         # print(sub_image.shape, type(sub_image), " sub image")
-        wrong_image = Image.fromarray(sub_image)
-        wrong_image.save(Path(output_dir  + "/training_sessions/" + timestamp + 
-                "/incorrect_labelings/" + str(x) + "_" + str(int(correct_labels[x])) + ".png"))
+        wrong_image = Image.fromarray(sub_image, mode="RGB")
+        wrong_image_dir = Path(os.path.join(output_dir,"training_sessions",timestamp, 
+                "incorrect_labelings",str(x) + "_" + str(int(correct_labels[x])) + ".png"))
+        print(wrong_image_dir)
+        wrong_image.save(wrong_image_dir)
 
     # Plot training data
 
@@ -255,7 +258,7 @@ def record_training(data, metadata, net, wrong_tests, correct_labels, output_dir
     plt.title("Training Loss")
     plt.legend()
     fig_file = Path()
-    loss_file  = Path(output_dir  + "/training_sessions/" + timestamp + "/train_loss.png")
+    loss_file  = Path(os.path.join(output_dir,"training_sessions",timestamp,"train_loss.png"))
     plt.savefig(loss_file)
     plt.clf()
     
@@ -266,7 +269,7 @@ def record_training(data, metadata, net, wrong_tests, correct_labels, output_dir
     plt.title("Training Error")
     plt.legend()
     fig_file = Path()
-    error_file  = Path(output_dir  + "/training_sessions/" + timestamp + "/train_error.png")
+    error_file  = Path(os.path.join(output_dir,"training_sessions",timestamp,"train_error.png"))
     plt.savefig(error_file)
     plt.clf()
 
@@ -291,7 +294,7 @@ if __name__ == "__main__":
     config.read(args.config_file)
 
     root_out = config['DEFAULT']['output_directory']
-    im_dir = root_out + "/training_images/"
+    im_dir = os.path.join(root_out, "training_images")
 
     # im_dir = args.image_directory
     # im_dir = os.getcwd() + "/training_images/"
@@ -343,7 +346,7 @@ if __name__ == "__main__":
     # CAN START CROSS-VALIDATION LOOP HERE
 
     # Shuffle data before partitioning
-    partition = (float(config['cnn']['partition_train']), float(config['cnn']['parition_val']))
+    partition = (float(config['cnn']['partition_train']), float(config['cnn']['partition_val']))
     x_training, x_val, x_test, y_training, y_val, y_test = rand_split_data(x, y, partition)
 
     print("Dataset Partitions:", str(len(x_training)) + " , " + str(len(x_val)) + " , " + str(len(x_test)) + " ")

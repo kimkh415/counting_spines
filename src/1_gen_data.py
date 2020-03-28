@@ -75,11 +75,11 @@ def create_training_images(tifs, coords, outname, patch_dim, norm_factor):
 
             box = arr[new_x - int(patch_dim/2): new_x + int(patch_dim/2), new_y - int(patch_dim/2): new_y + int(patch_dim/2)]
 
-            if not os.path.exists(Path(outname + "positive_examples/")):
-                os.makedirs(Path(outname + "positive_examples/"))
+            if not os.path.exists(Path(outname + "positive_examples")):
+                os.makedirs(Path(outname + "positive_examples"))
 
-            if not os.path.exists(Path(outname + "negative_examples/")):
-                os.makedirs(Path(outname + "negative_examples/"))
+            if not os.path.exists(Path(outname + "negative_examples")):
+                os.makedirs(Path(outname + "negative_examples"))
 
             for i in range(4):
                 pos = box.reshape((1, patch_dim, patch_dim)) / norm_factor
@@ -87,7 +87,7 @@ def create_training_images(tifs, coords, outname, patch_dim, norm_factor):
                 cur_positives.append(pos)
 
                 tr_im = Image.fromarray(box)
-                tr_im.save(outname + "positive_examples/" + "spine_image{}-{}.tif".format(pos_idx, i))
+                tr_im.save(os.path.join(outname,"positive_examples/","spine_image{}-{}.tif".format(pos_idx, i)))
                 box = np.rot90(box)
                 pos_idx += 1
 

@@ -13,6 +13,7 @@ from pathlib import Path
 from sklearn.metrics.cluster import adjusted_mutual_info_score
 from sklearn.cluster import DBSCAN
 import configparser
+import glob
 
 class DBScan_Counter():
 
@@ -85,7 +86,7 @@ class DBScan_Counter():
         full_grid_array = np.zeros((grid_shape))
         sp_count_err = np.zeros((grid_shape))
 
-        print("Grid Shape", grid_shape)
+        # print("Grid Shape", grid_shape)
 
         for w in range(grid_shape[0]):
             self.convert_to_clusterables(self.clust_scalings[w])
@@ -106,13 +107,13 @@ class DBScan_Counter():
                             # full_grid_array[w, x, y, z, i] = err
 
                             clus_im = np.zeros(image_dict["image"].shape)
-                            print(image_dict["clusterable"])
+                            # print(image_dict["clusterable"])
                             for j in range(len(image_dict["clusterable"])):
                                 if masses[j] != -1:
                                     clus_im[int(image_dict["clusterable"][j][1]), int(image_dict["clusterable"][j][2])] = image_dict["scanned output"][int(image_dict["clusterable"][j][1]), int(image_dict["clusterable"][j][2])]
 
                             mut_info = -compute_mutual_info(clus_im, image_dict)
-                            print(mut_info)
+                            # print(mut_info)
                             full_grid_array[w, x, y, z, i] = mut_info
 
         err_array = full_grid_array[:, :, :, :, ::skip_image_factor]
@@ -123,7 +124,7 @@ class DBScan_Counter():
         min_coords = np.unravel_index(np.argmin(average_accs_full), average_accs_full.shape)
         min_acc = np.min(average_accs_full)
 
-        print(sp_count_err[min_coords].shape, sp_count_err[min_coords], np.average(sp_count_err[min_coords]))
+        # print(sp_count_err[min_coords].shape, sp_count_err[min_coords], np.average(sp_count_err[min_coords]))
 
         min_hyperparams = {
                             "cluster scaling": self.clust_scalings[min_coords[0]],
@@ -184,7 +185,7 @@ class DBScan_Counter():
 
     def count_single_image(self, clusterable, metric, eps, min_samples):
 
-        print("Computing Single Clustering: " + str(eps) + " , " + str(min_samples))
+        # print("Computing Single Clustering: " + str(eps) + " , " + str(min_samples))
         # print(clusterable.shape)
         scanned_output = DBSCAN(eps=eps, min_samples=min_samples, metric=metric).fit(clusterable)
         clus_labels = scanned_output.labels_
@@ -196,9 +197,9 @@ class DBScan_Counter():
 
         raw_dist = abs(image_dict["count"] - count)
 
-        print("count: " + str(count))
-        print("true count: " + str(image_dict["count"]))
-        print("error: ", str(raw_dist))
+        # print("count: " + str(count))
+        # print("true count: " + str(image_dict["count"]))
+        # print("error: ", str(raw_dist))
         return raw_dist, image_dict["count"]
 
 
@@ -256,13 +257,24 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Processing of scanned output maps into actual dendritic spine counts")
     # parser.add_argument("scans_path", help="Output path of scanned image maps")
     # parser.add_argument("output_dir", help="Output directory for counting output")
-    parser.add_argument("--model_path", help="Path to saved model. Chooses the most recent by default")
+    parser.add_argument("--scanned_images_dir", help="Path to directory containing scanned image pickle file (scanned_data.p). By default chooses most recent training session. Also places outputs in this directory")
     parser.add_argument("config_file", help="Path to config file for pipeline")
     args = parser.parse_args()
 
     config = configparser.ConfigParser()
     config.sections()
     config.read(args.config_file)
+
+    output_dir = max(glob.glob(os.path.join(os.path.join(config['DEFAULT']['output_directory'], "training_sessions"), '*/')), key=os.path.getmtime)
+    scanned = os.path.join(output_dir, "scanned_data.p")
+
+    if hasattr(args, "scanned_images_dir"):
+        if args.scanned_images_dir != None:
+            if os.path.isdir(args.scanned_images_dir):
+                scanned = args.model_dir
+                output_dir = args.model_dir
+            else:
+                print("Model directory is not a directory")
 
     # clust_scaling_iter = [2*x for x in range(0,5)]
     # distance_metric_iter = ["euclidean", "manhattan"]
@@ -279,19 +291,19 @@ if __name__ == "__main__":
     eps_iter = [int(x) for x in config['spine_counter']['eps_iter'].split(",")]
     min_samp_iter = [int(x) for x in config['spine_counter']['min_samp_iter'].split(",")] 
 
-    counter = DBScan_Counter(args.scans_path, args.output_dir, clust_scaling_iter, distance_metric_iter, eps_iter,
+    counter = DBScan_Counter(scanned, output_dir, clust_scaling_iter, distance_metric_iter, eps_iter,
                              min_samp_iter)
     errors, num_spines = counter.full_grid_search()
 
-    print(errors.shape, errors)
-    print(num_spines)
+    # print(errors.shape, errors)
+    # print(num_spines)
 
     max_err = max(errors)
     max_num_sp = max(num_spines)
 
-    plot_hist(errors, np.arange(max_err+2), "|True count - Predicted count|", os.path.join(args.output_dir, "err_hist.png"))
+    plot_hist(errors, np.arange(max_err+2), "|True count - Predicted count|", os.path.join(output_dir, "err_hist.png"))
     # plot_hist(errors, np.arange(max_err + 2), "Mutual Information",
     #           os.path.join(args.output_dir, "err_hist.png"))
-    plot_hist(num_spines, np.arange(max_num_sp+2), "Number of spines", os.path.join(args.output_dir, "num_spine_hist.png"))
+    plot_hist(num_spines, np.arange(max_num_sp+2), "Number of spines", os.path.join(output_dir, "num_spine_hist.png"))
 
     # python scanner.py 40 C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\Labeled_Spines_Tavita\ C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\counting_spines\src\training_sessions\2019-04-1515_00_29\weights.pt C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\counting_spines\src\training_sessions\2019-04-1515_00_29\
