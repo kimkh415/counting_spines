@@ -274,12 +274,7 @@ class Scanner():
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Image scanner for  10-707(Deep Learning) project")
-    # parser.add_argument("patch_size", help="Size of model patch size")
-    # parser.add_argument("images_dir", help="Directory containing images to be processed")
     parser.add_argument("--training_session", help="Path to directory containing trained model. Chooses the most recent training session by default")
-    # parser.add_argument("output_dir", help="Output directory of scanned image maps")
-    # args = parser.parse_args()
-
     parser.add_argument("config_file", help="Path to config file for pipeline")
     args = parser.parse_args()
 
@@ -298,16 +293,14 @@ if __name__ == "__main__":
     if hasattr(args, "training_session"):
         if args.training_session != None:
             if os.path.isdir(args.training_session):
-                most_recent_model = os.path.join(args.model_dir, "model.pb")
-                output_dir = args.model_dir
+                most_recent_model = os.path.join(args.training_session, "model.pb")
+                output_dir = args.training_session
             else:
                 print("Model directory is not a directory")
 
-    # python scanner.py 40 C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\Labeled_Spines_Tavita\ C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\counting_spines\src\training_sessions\2019-04-1515_00_29\weights.pt C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\counting_spines\src\training_sessions\2019-04-1515_00_29\
     # Create scanner object
     print("MOST RECENT")
     print(most_recent_model)
-    # scanner = Scanner(Path(args.images_dir), Path(args.model_path), int(args.patch_size), Path(args.output_dir), norm_factor)
     scanner = Scanner(Path(image_dir), Path(most_recent_model), int(config['DEFAULT']['patch_dim']), Path(output_dir), int(config['DEFAULT']['norm_factor']))
     figdir = os.path.join(output_dir, "prediction_figures")
     if os.path.isdir(figdir) is False:
