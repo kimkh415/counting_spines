@@ -276,7 +276,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Image scanner for  10-707(Deep Learning) project")
     # parser.add_argument("patch_size", help="Size of model patch size")
     # parser.add_argument("images_dir", help="Directory containing images to be processed")
-    parser.add_argument("--model_dir", help="Path to directory containing trained model. Chooses the most recent by default")
+    parser.add_argument("--training_session", help="Path to directory containing trained model. Chooses the most recent training session by default")
     # parser.add_argument("output_dir", help="Output directory of scanned image maps")
     # args = parser.parse_args()
 
@@ -295,10 +295,10 @@ if __name__ == "__main__":
 
     most_recent_model = os.path.join(output_dir, "model.pb")
 
-    if hasattr(args, "model_dir"):
-        if args.model_dir != None:
-            if os.path.isdir(args.model_dir):
-                most_recent_model = args.model_dir
+    if hasattr(args, "training_session"):
+        if args.training_session != None:
+            if os.path.isdir(args.training_session):
+                most_recent_model = os.path.join(args.model_dir, "model.pb")
                 output_dir = args.model_dir
             else:
                 print("Model directory is not a directory")
