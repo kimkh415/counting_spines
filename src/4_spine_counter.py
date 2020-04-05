@@ -48,8 +48,7 @@ class DBScan_Counter():
             clusterable = []
 
             c_ind = 0
-            # plt.imshow(image)
-            # plt.show()
+            
             for x in range(imshape[0]):
                 for y in range(imshape[1]):
                     # print(image[x,y], x, y)
@@ -124,8 +123,6 @@ class DBScan_Counter():
         min_coords = np.unravel_index(np.argmin(average_accs_full), average_accs_full.shape)
         min_acc = np.min(average_accs_full)
 
-        # print(sp_count_err[min_coords].shape, sp_count_err[min_coords], np.average(sp_count_err[min_coords]))
-
         min_hyperparams = {
                             "cluster scaling": self.clust_scalings[min_coords[0]],
                             "distance metric": self.distance_metrics[min_coords[1]],
@@ -185,8 +182,6 @@ class DBScan_Counter():
 
     def count_single_image(self, clusterable, metric, eps, min_samples):
 
-        # print("Computing Single Clustering: " + str(eps) + " , " + str(min_samples))
-        # print(clusterable.shape)
         scanned_output = DBSCAN(eps=eps, min_samples=min_samples, metric=metric).fit(clusterable)
         clus_labels = scanned_output.labels_
         count = len(set(clus_labels)) - (1 if -1 in clus_labels else 0)
@@ -197,9 +192,6 @@ class DBScan_Counter():
 
         raw_dist = abs(image_dict["count"] - count)
 
-        # print("count: " + str(count))
-        # print("true count: " + str(image_dict["count"]))
-        # print("error: ", str(raw_dist))
         return raw_dist, image_dict["count"]
 
 
@@ -255,8 +247,6 @@ def plot_hist(arr, bins, x_label, outname):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Processing of scanned output maps into actual dendritic spine counts")
-    # parser.add_argument("scans_path", help="Output path of scanned image maps")
-    # parser.add_argument("output_dir", help="Output directory for counting output")
     parser.add_argument("--training_session", help="Path to directory containing scanned image pickle file (scanned_data.p) of interest. By default chooses most recent training session. Also places outputs in this directory")
     parser.add_argument("config_file", help="Path to config file for pipeline")
     args = parser.parse_args()
@@ -271,20 +261,10 @@ if __name__ == "__main__":
     if hasattr(args, "training_session"):
         if args.training_session != None:
             if os.path.isdir(args.training_session):
-                scanned = args.model_dir
-                output_dir = args.model_dir
+                scanned = os.path.join(args.training_session, "scanned_data.p")
+                output_dir = args.training_session
             else:
-                print("Model directory is not a directory")
-
-    # clust_scaling_iter = [2*x for x in range(0,5)]
-    # distance_metric_iter = ["euclidean", "manhattan"]
-    # eps_iter = [x for x in range(1,5)]
-    # min_samp_iter = [10*x for x in range(4, 8)]
-
-    # clust_scaling_iter = [8]
-    # distance_metric_iter = ["euclidean"]
-    # eps_iter = [4]
-    # min_samp_iter = [40]
+                print("Training session is not a directory")
 
     clust_scaling_iter = [int(x) for x in config['spine_counter']['clust_scaling_iter'].split(",")]
     distance_metric_iter = [x for x in config['spine_counter']['distance_metric_iter'].split(",")]
@@ -295,9 +275,6 @@ if __name__ == "__main__":
                              min_samp_iter)
     errors, num_spines = counter.full_grid_search()
 
-    # print(errors.shape, errors)
-    # print(num_spines)
-
     max_err = max(errors)
     max_num_sp = max(num_spines)
 
@@ -305,5 +282,3 @@ if __name__ == "__main__":
     # plot_hist(errors, np.arange(max_err + 2), "Mutual Information",
     #           os.path.join(args.output_dir, "err_hist.png"))
     plot_hist(num_spines, np.arange(max_num_sp+2), "Number of spines", os.path.join(output_dir, "num_spine_hist.png"))
-
-    # python scanner.py 40 C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\Labeled_Spines_Tavita\ C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\counting_spines\src\training_sessions\2019-04-1515_00_29\weights.pt C:\Users\Saideep\Documents\Github_Repos\MSCB_Sem1\Deep_Learning\Project\counting_spines\src\training_sessions\2019-04-1515_00_29\
