@@ -257,7 +257,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Processing of scanned output maps into actual dendritic spine counts")
     # parser.add_argument("scans_path", help="Output path of scanned image maps")
     # parser.add_argument("output_dir", help="Output directory for counting output")
-    parser.add_argument("--scanned_images_dir", help="Path to directory containing scanned image pickle file (scanned_data.p). By default chooses most recent training session. Also places outputs in this directory")
+    parser.add_argument("--training_session", help="Path to directory containing scanned image pickle file (scanned_data.p) of interest. By default chooses most recent training session. Also places outputs in this directory")
     parser.add_argument("config_file", help="Path to config file for pipeline")
     args = parser.parse_args()
 
@@ -268,9 +268,9 @@ if __name__ == "__main__":
     output_dir = max(glob.glob(os.path.join(os.path.join(config['DEFAULT']['output_directory'], "training_sessions"), '*/')), key=os.path.getmtime)
     scanned = os.path.join(output_dir, "scanned_data.p")
 
-    if hasattr(args, "scanned_images_dir"):
-        if args.scanned_images_dir != None:
-            if os.path.isdir(args.scanned_images_dir):
+    if hasattr(args, "training_session"):
+        if args.training_session != None:
+            if os.path.isdir(args.training_session):
                 scanned = args.model_dir
                 output_dir = args.model_dir
             else:
