@@ -1,5 +1,5 @@
 # Counting Spines
-This was originally conceived as a project for the 10707:Deep Learning course at CMU. It is a deep learning solution to the problem of quantifying neuronal `dendritic spines` from microscopy images. Broadly speaking, this pipeline allows researchers to provide a set of hand-labelled microscopy images to train a lightweight convolutional neural network. This model is then used to create prediction maps of where it predicts dendritic spines are likely to exist. Subsequent clustering algorithms are used to quantify the number of predicted spines as well as their relative size. The full description can be found at: [MANUSCRIPT URL]
+This was originally conceived as a project for the 10707:Deep Learning course at CMU. It is a deep learning solution to the problem of quantifying neuronal [dendritic spines](https://en.wikipedia.org/wiki/Dendritic_spine) from microscopy images. Broadly speaking, this pipeline allows researchers to provide a set of hand-labelled microscopy images to train a lightweight convolutional neural network. This model is then used to create prediction maps of where it predicts dendritic spines are likely to exist. Subsequent clustering algorithms are used to quantify the number of predicted spines as well as their relative size. The full description can be found at: [MANUSCRIPT URL]
 
 
 # Steps
