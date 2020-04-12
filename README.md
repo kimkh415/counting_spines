@@ -17,7 +17,7 @@ Followed by activating the environment with:
 This must be done before each session.
 
 
-## Training Image Specifications
+## Training image specifications
 Starting from expert labeled dendritic spine images ([linke to images](https://figshare.com/articles/Labeled_Dendritic_Spines_-_Training_Data/6149207), [details about image preparation](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0199589)), we have curated two sets of training images: (1) Positive example set, where each image contains exactly one spine and (2) negative example set, which is a collection of random partitions that do not include spines.
 
 Sample positive examples:
@@ -34,12 +34,12 @@ Sample negative examples:
 
 Positive and negative training sets are matched in the number of images to avoid introducing bias. When randomly selecting segments of images to be our negative examples, we noticed that the majority of sampled segments was completely dark. To select more informative negative examples, we introduce an overall intensity (summed intensity over all pixels) threshold where we only select images above this threshold (default is 0.05). For every selected image, we augment our training data by rotating it three times by 90&deg;. 
 
-## Working With Your Own Training Images
+## Working with your own training images
 
-## Modify Configuration File
+## Modify configuration file
 All modifiable directory paths and parameters for the whole pipeline can be found and modified in the configuration file (src/config.ini). The default values for the model and clustering parameters should be sufficient for most use cases. Some expected exceptions include the `training_epochs` parameter, which should be increased if it seems like the training curves have not reached inflection. If your hardware is insufficient(e.g. not enough RAM), then it may be helpful to reduce the number of filters and/or nodes in the neural network. More details on individual parameters can be found in the config.ini file itself.
 
-## Run Training Pipeline
+## Run training pipeline
 This is a multistep pipeline with 4 major steps and many intermediate files. Outlined here are the steps, description of purpose, and usage expectations. More detail specific non-config inputs for each script can be found using the `--help` flag. 
 
 ### 1_gen_data.py
@@ -89,7 +89,8 @@ This step uses a grid search to find the most accurate clustering algorithm for 
 
 The highest accuracy clustering algorithm will be recorded and used for accuracy reporting
 
-## Running on Novel Data
+
+## Running on novel data
 The training pipeline allows for the selection of an optimal convolutional model and clustering algorithm combination for the training set. In order to use these on new, unlabeled data we need only borrow the necessary parts of the training pipeline with slight modifications. The process is as follows:
 
 1. Organize the novel data in the same directory structure as you would the training (lacking the label files). Do this in a seperate directory from the training files.
