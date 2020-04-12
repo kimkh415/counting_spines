@@ -20,8 +20,8 @@ This must be done before each session.
 ## Training image specifications
 Starting from expert labeled dendritic spine images ([linke to images](https://figshare.com/articles/Labeled_Dendritic_Spines_-_Training_Data/6149207), [details about image preparation](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0199589)), we have curated two sets of training images: (1) Positive example set, where each image contains exactly one spine and (2) negative example set, which is a collection of random partitions that do not include spines.
 
-Original image             |  Image with padding  | Spines identified
-|and bounding boxes around spine centers|
+Original image             |  Padded image with bounding boxes around spines  | Spines identified
+----|----|----
 ![](readme_images/0_original.png)  |  ![](readme_images/0_center_box.png) | ![](readme_images/0_prob_map.png)
 
 Sample positive examples:
