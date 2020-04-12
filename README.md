@@ -73,7 +73,7 @@ This step uses a trained model as a tool to "scan" across whole (not patch) micr
 1. Reassemble probability values into a probability map
 1. Store this map for downstream quantification
 
-By default this will use the most recent trained model in the output directory, but you can also specify the folder path to any previous training directory using the optional --model-dir flag. 
+By default this will use the most recent trained model in the output directory, but you can also specify the folder path to any previous training directory using the optional `--model-dir` flag. 
 
 *PROVIDE EXAMPLE WHOLE IMAGES + PROBABILITY MAP*
 
