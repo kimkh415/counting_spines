@@ -31,7 +31,7 @@ Sample negative examples:
 ![Sample negative training image 3](readme_images/neg_example_3.png)
 ![Sample negative training image 4](readme_images/neg_example_4.png)
 
-Positive and negative training sets are matched in the number of images to avoid introducing bias. When randomly selecting segments of images to be our negative examples, we noticed that the majority of sampled segments was completely dark. To select more informative negative examples, we introduce an overall intensity (summed intensity over all pixels) threshold where we only select images above this threshold (default is 0.05). For every selected image, we augment our training data by rotating it three times by 90&deg. 
+Positive and negative training sets are matched in the number of images to avoid introducing bias. When randomly selecting segments of images to be our negative examples, we noticed that the majority of sampled segments was completely dark. To select more informative negative examples, we introduce an overall intensity (summed intensity over all pixels) threshold where we only select images above this threshold (default is 0.05). For every selected image, we augment our training data by rotating it three times by 90&deg;. 
 
 
 ## Modify Configuration File
