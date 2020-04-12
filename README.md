@@ -35,10 +35,10 @@ Positive and negative training sets are matched in the number of images to avoid
 
 
 ## Modify Configuration File
-All modifiable directory paths and parameters for the whole pipeline can be found and modified in the configuration file (src/config.ini). The default values for the model and clustering parameters should be sufficient for most use cases. Some expected exceptions include the "training_epochs" parameter, which should be increased if it seems like the training curves have not reached inflection. If your hardware is insufficient(e.g. not enough RAM), then it may be helpful to reduce the number of filters and/or nodes in the neural network. More details on individual parameters can be found in the config.ini file itself.
+All modifiable directory paths and parameters for the whole pipeline can be found and modified in the configuration file (src/config.ini). The default values for the model and clustering parameters should be sufficient for most use cases. Some expected exceptions include the `training_epochs` parameter, which should be increased if it seems like the training curves have not reached inflection. If your hardware is insufficient(e.g. not enough RAM), then it may be helpful to reduce the number of filters and/or nodes in the neural network. More details on individual parameters can be found in the config.ini file itself.
 
 ## Run Training Pipeline
-This is a multistep pipeline with 4 major steps and many intermediate files. Outlined here are the steps, description of purpose, and usage expectations. More detail specific non-config inputs for each script can be found using the "--help" flag. 
+This is a multistep pipeline with 4 major steps and many intermediate files. Outlined here are the steps, description of purpose, and usage expectations. More detail specific non-config inputs for each script can be found using the `--help` flag. 
 
 ### 1_gen_data.py
 This step is designed to take in the training images and labels in native format and do the following:
@@ -55,7 +55,11 @@ This step only needs to be run a single time per training dataset.
 ### 2_cnn.py
 This step uses the training patches to train the convolutional neural network model and then stores the trained model for subsequent use. This model takes in the training patch and outputs a probability value of whether there is a dendritic spine in the image. Fortunately the current framework is simple enough such that a GPU is usually not required for training. If training time is too slow, a gpu can be used with some modifications.
 
-The trained model will be stored in a time-stamped directory along with relevant training data. For maximum accuracy, the training curves should have reached convergance. If this is not the case, then likely more training epochs should be used and the model retrained. *PROVIDE EXAMPLE TRAINING CURVES*
+The trained model will be stored in a time-stamped directory along with relevant training data. For maximum accuracy, the training curves should have reached convergance. If this is not the case, then likely more training epochs should be used and the model retrained.
+
+Example training Error:
+
+![training_error](src\training_sessions\new_bndr)
 
 ### 3_scanner.py
 This step uses a trained model as a tool to "scan" across whole (not patch) microscopy images. For each whole image, it does the following:
