@@ -22,10 +22,8 @@ Starting from expert labeled dendritic spine images ([linke to images](https://f
 
 Original image             |  Padded image with bounding boxes around spines  | Spines identified
 ----|----|----
-<img src="readme_images/0_original.png" height="128" width="128">  |  ![](readme_images/0_center_box.png =128x128) | ![](readme_images/0_prob_map.png =128x128)
-<img src="readme_images/0_original.png" height="128" width="128">
-<img src="readme_images/0_original.png" height="128" width="128">
-<img src="readme_images/0_original.png" height="128" width="128">
+<img src="readme_images/0_original.png" height="128" width="128">  |  <img src="readme_images/0_center_box.png" height="128" width="128"> | <img src="readme_images/0_prob_map.png" height="128" width="128">
+
 Sample positive examples:
 ![Sample positive training image 1](readme_images/pos_example_1.png)
 ![Sample positive training image 2](readme_images/pos_example_2.png)
