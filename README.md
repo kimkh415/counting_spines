@@ -95,7 +95,7 @@ The training pipeline allows for the selection of an optimal convolutional model
 
 1. Organize the novel data in the same directory structure as you would the training (lacking the label files). Do this in a seperate directory from the training files.
 1. Modify the config file "image_directory" to point to your novel image directory
-1. Run step 3 (3_scanner.py) in "novel" mode using the "--novel" flag
-1. Run step 4 (4_spine_counter.py) in "novel" mode using the "--novel" flag
+1. Run step 3 (3_scanner.py) in "novel" mode using the `--novel` flag
+1. Run step 4 (4_spine_counter.py) in "novel" mode using the `--novel` flag
 
 This will output the reported results in the directory of the training session, but inside a seperate directory called "novel". 
