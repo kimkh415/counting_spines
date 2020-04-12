@@ -11,7 +11,9 @@ Included in this repository are some system-specific .yml files. These can be us
 `conda env create -f /path/to/src/environment.yml -n counting_spines`
 
 Followed by activating the environment with:
+
 `activate counting_spines`
+
 This must be done before each session.
 
 ## Create Training Images and Labels
