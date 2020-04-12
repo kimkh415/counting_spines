@@ -19,21 +19,19 @@ This must be done before each session.
 ## Create Training Images and Labels
 Starting from expert labeled dendritic spine images ([linke to images](https://figshare.com/articles/Labeled_Dendritic_Spines_-_Training_Data/6149207), [details about image preparation](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0199589)), we have curated two sets of training images: (1) Positive example set, where each image contains exactly one spine and (2) negative example set, which is a collection of random partitions that do not include spines.
 
-Sample positive examples.
-
+Sample positive examples:
 ![Sample positive training image 1](readme_images/pos_example_1.png)
 ![Sample positive training image 2](readme_images/pos_example_2.png)
 ![Sample positive training image 3](readme_images/pos_example_3.png)
 ![Sample positive training image 4](readme_images/pos_example_4.png)
 
-Sample negative examples.
-
+Sample negative examples:
 ![Sample negative training image 1](readme_images/neg_example_1.png)
 ![Sample negative training image 2](readme_images/neg_example_2.png)
 ![Sample negative training image 3](readme_images/neg_example_3.png)
 ![Sample negative training image 4](readme_images/neg_example_4.png)
 
-Included 
+Positive and negative training sets are matched in the number of images to avoid introducing bias. When randomly selecting segments of images to be our negative examples, we noticed that the majority of sampled segments was completely dark. To select more informative negative examples, we introduce an overall intensity (summed intensity over all pixels) threshold where we only select images above this threshold (default is 0.05). For every selected image, we augment our training data by rotating it three times by 90&deg. 
 
 
 ## Modify Configuration File
