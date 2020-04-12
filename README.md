@@ -20,9 +20,9 @@ This must be done before each session.
 ## Training image specifications
 Starting from expert labeled dendritic spine images ([linke to images](https://figshare.com/articles/Labeled_Dendritic_Spines_-_Training_Data/6149207), [details about image preparation](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0199589)), we have curated two sets of training images: (1) Positive example set, where each image contains exactly one spine and (2) negative example set, which is a collection of random partitions that do not include spines.
 
-Original image             |  Padded image with bounding boxes around spines  | Spines identified
-:----:|:----:|:----:
-<img src="readme_images/0_original.png" height="128" width="128">  |  <img src="readme_images/0_center_box.png" height="128" width="128"> | <img src="readme_images/0_prob_map.png" height="128" width="128">
+Original image             |  Bounding box for positive examples
+:----:|:----:
+<img src="readme_images/0_original.png" height="128" width="128">  |  <img src="readme_images/0_center_box.png" height="128" width="128">
 
 Sample positive examples:
 ![Sample positive training image 1](readme_images/pos_example_1.png)
@@ -79,7 +79,9 @@ This step uses a trained model as a tool to "scan" across whole (not patch) micr
 
 By default this will use the most recent trained model in the output directory, but you can also specify the folder path to any previous training directory using the optional `--model-dir` flag. 
 
-*PROVIDE EXAMPLE WHOLE IMAGES + PROBABILITY MAP*
+Original image             |  Spine probability map
+:----:|:----:
+<img src="readme_images/0_original.png" height="128" width="128">  | <img src="readme_images/0_prob_map.png" height="128" width="128">
 
 ### 4_spine_counter.py
 This step uses a grid search to find the most accurate clustering algorithm for counting the number of spines across the entire training set. It does this by doing the following per choice of clustering algorithm:
