@@ -22,7 +22,7 @@ Starting from expert labeled dendritic spine images ([linke to images](https://f
 
 Original image             |  Padded image with bounding boxes around spines  | Spines identified
 ----|----|----
-![](readme_images/0_original.png)  |  ![](readme_images/0_center_box.png) | ![](readme_images/0_prob_map.png)
+![](readme_images/0_original.png =128x128)  |  ![](readme_images/0_center_box.png =128x128) | ![](readme_images/0_prob_map.png =128x128)
 
 Sample positive examples:
 ![Sample positive training image 1](readme_images/pos_example_1.png)
