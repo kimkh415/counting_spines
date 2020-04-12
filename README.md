@@ -17,6 +17,10 @@ Followed by activating the environment with:
 This must be done before each session.
 
 ## Create Training Images and Labels
+Starting from expert labeled dendritic spine images ([linke to images](https://figshare.com/articles/Labeled_Dendritic_Spines_-_Training_Data/6149207), [details about image preparation](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0199589)), we have curated two sets of training images: (1) Positive example set, where each image contains exactly one spine and (2) negative example set, which is a collection of random partitions that do not include spines.
+
+Included 
+
 
 ## Modify Configuration File
 All modifiable directory paths and parameters for the whole pipeline can be found and modified in the configuration file (src/config.ini). The default values for the model and clustering parameters should be sufficient for most use cases. Some expected exceptions include the "training_epochs" parameter, which should be increased if it seems like the training curves have not reached inflection. If your hardware is insufficient(e.g. not enough RAM), then it may be helpful to reduce the number of filters and/or nodes in the neural network. More details on individual parameters can be found in the config.ini file itself.
