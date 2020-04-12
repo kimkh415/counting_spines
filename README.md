@@ -57,10 +57,8 @@ This step uses the training patches to train the convolutional neural network mo
 
 The trained model will be stored in a time-stamped directory along with relevant training data. For maximum accuracy, the training curves should have reached convergance. If this is not the case, then likely more training epochs should be used and the model retrained.
 
-![training_error](src/training_sessions/new_bndr/train_error.png)
-
 Example training error             |  Example training loss
-:-------------------------:|:-------------------------:
+-------------------------|-------------------------
 ![](src/training_sessions/new_bndr/train_error.png)  |  ![](src/training_sessions/new_bndr/train_loss.png)
 
 ### 3_scanner.py
