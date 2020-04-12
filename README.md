@@ -1,5 +1,5 @@
 # Counting Spines
-This was originally conceived as a project for the 10707:Deep Learning course at CMU. It is a deep learning solution to the problem of quantifying neuronal "dendritic spines" from microscopy images. Broadly speaking, this pipeline allows researchers to provide a set of hand-labelled microscopy images to train a lightweight convolutional neural network. This model is then used to create prediction maps of where it predicts dendritic spines are likely to exist. Subsequent clustering algorithms are used to quantify the number of predicted spines as well as their relative size. The full description can be found at: [MANUSCRIPT URL]
+This was originally conceived as a project for the 10707:Deep Learning course at CMU. It is a deep learning solution to the problem of quantifying neuronal `dendritic spines` from microscopy images. Broadly speaking, this pipeline allows researchers to provide a set of hand-labelled microscopy images to train a lightweight convolutional neural network. This model is then used to create prediction maps of where it predicts dendritic spines are likely to exist. Subsequent clustering algorithms are used to quantify the number of predicted spines as well as their relative size. The full description can be found at: [MANUSCRIPT URL]
 
 
 # Steps
@@ -7,9 +7,9 @@ This was originally conceived as a project for the 10707:Deep Learning course at
 ## Deploy environment
 
 Included in this repository are some system-specific .yml files. These can be used to easily create python environments with all the required packages. First make sure to have a system install of Anaconda3(https://www.anaconda.com/). Then just run:
-'''conda env create -f (appropriate path).yml'''
+`conda env create -f /path/to/src/environment.yml -n counting_spines`
 Followed by activating the environment with:
-'''activate counting_spines'''
+`activate counting_spines`
 This must be done before each session.
 
 ## Create Training Images and Labels
