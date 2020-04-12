@@ -59,7 +59,7 @@ The trained model will be stored in a time-stamped directory along with relevant
 
 Example training Error:
 
-![training_error](src\training_sessions\new_bndr)
+![training_error](src\training_sessions\new_bndr\train_error.png)
 
 ### 3_scanner.py
 This step uses a trained model as a tool to "scan" across whole (not patch) microscopy images. For each whole image, it does the following:
