@@ -22,6 +22,16 @@ Starting from expert labeled dendritic spine images ([linke to images](https://f
 Sample positive examples.
 
 ![Sample positive training image 1](readme_images/pos_example_1.png)
+![Sample positive training image 2](readme_images/pos_example_2.png)
+![Sample positive training image 3](readme_images/pos_example_3.png)
+![Sample positive training image 4](readme_images/pos_example_4.png)
+
+Sample negative examples.
+
+![Sample negative training image 1](readme_images/neg_example_1.png)
+![Sample negative training image 2](readme_images/neg_example_2.png)
+![Sample negative training image 3](readme_images/neg_example_3.png)
+![Sample negative training image 4](readme_images/neg_example_4.png)
 
 Included 
 
