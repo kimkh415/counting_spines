@@ -6,8 +6,8 @@ This was originally conceived as a project for the 10707:Deep Learning course at
 
 ## Deploy environment
 
-Included in this repository are some system-specific .yml files. These can be used to easily create python environments with all the required packages. First make sure to have a system install of Anaconda3(https://www.anaconda.com/). Then just run:
-`conda env create -f /path/to/src/environment.yml -n counting_spines`
+Included in this repository are some system-specific .yml files. These can be used to easily create python environments with all the required packages. First make sure to have a system install of Anaconda3(https://www.anaconda.com/). Then run:\n
+`conda env create -f /path/to/src/environment.yml -n counting_spines`\n
 Followed by activating the environment with:
 `activate counting_spines`
 This must be done before each session.
